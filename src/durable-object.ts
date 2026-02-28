@@ -1,292 +1,225 @@
-import type {
-  PlayerSymbol,
-  CellValue,
-  GameStatus,
-  ClientMessage,
-  ServerMessage,
-  InternalPlayer,
-} from './types/messages';
+import type { ClientMessage, ServerMessage, PublicPlayer, InternalPlayer, RoomState } from './types/messages';
+import { GRACE_PERIOD_MS } from './types/messages';
+import { gameRegistry, getGame } from './games/registry';
+import type { GameDefinition, BaseGameState } from './games/types';
 
-interface RoomState {
+interface InternalRoomState {
   roomCode: string;
+  gameType: string;
   players: InternalPlayer[];
-  board: CellValue[];
-  turn: PlayerSymbol;
-  status: GameStatus;
-  winner: PlayerSymbol | null;
-  winningCells: number[] | null;
+  status: 'waiting' | 'active' | 'finished' | 'draw';
+  winner: string | null;
+  currentPlayerIndex: number;
+  gameData: unknown;
   createdAt: number;
   lastActivityTs: number;
 }
 
 export class GameRoom {
   private state: DurableObjectState;
-  private roomState!: RoomState;
-  private connections = new Map<string, WebSocket>();
-  private initialized = false;
+  private roomState: InternalRoomState;
+  private connections: Map<string, WebSocket> = new Map();
+  private heartbeatTimer: number | null = null;
 
-  constructor(state: DurableObjectState) {
+  constructor(state: DurableObjectState, _env: unknown) {
     this.state = state;
+    const existing = this.state.storage.get<InternalRoomState>('roomState');
+    this.roomState = existing || {
+      roomCode: '', gameType: '', players: [], status: 'waiting', winner: null,
+      currentPlayerIndex: 0, gameData: null, createdAt: Date.now(), lastActivityTs: Date.now(),
+    };
   }
 
-  // =============================
-  // Initialization
-  // =============================
-  private async ensureInitialized(roomCodeFromUrl?: string) {
-    if (this.initialized) return;
-
-    const stored = await this.state.storage.get<RoomState>('roomState');
-
-    if (stored) {
-      this.roomState = stored;
-    } else {
-      this.roomState = {
-        roomCode: roomCodeFromUrl ?? 'default',
-        players: [],
-        board: Array(9).fill(null),
-        turn: 'X',
-        status: 'waiting',
-        winner: null,
-        winningCells: null,
-        createdAt: Date.now(),
-        lastActivityTs: Date.now(),
-      };
-
-      await this.persistState();
-    }
-
-    this.initialized = true;
+  getGameDefinition(): GameDefinition | null {
+    if (!this.roomState.gameType) return null;
+    return getGame(this.roomState.gameType) || null;
   }
 
-  // =============================
-  // Entry
-  // =============================
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === '/websocket') {
-      const roomCode = url.searchParams.get('room');
-      await this.ensureInitialized(roomCode ?? undefined);
-      return this.handleWebSocketUpgrade(request, roomCode);
+      return this.handleWebSocketUpgrade(request, url);
     }
 
     if (url.pathname === '/api/status') {
-      await this.ensureInitialized();
-      return new Response(
-        JSON.stringify({
-          roomCode: this.roomState.roomCode,
-          playerCount: this.roomState.players.filter(p => p.connected).length,
-          status: this.roomState.status,
-        }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify(this.getPublicState()), {
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     return new Response('Not Found', { status: 404 });
   }
 
-  // =============================
-  // WebSocket
-  // =============================
-  private async handleWebSocketUpgrade(
-    request: Request,
-    roomCode: string | null
-  ): Promise<Response> {
+  private async handleWebSocketUpgrade(request: Request, url: URL): Promise<Response> {
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('Expected WebSocket', { status: 400 });
     }
 
+    const roomCode = url.searchParams.get('room');
     if (!roomCode) {
-      return new Response('Invalid room', { status: 400 });
+      return new Response('Room code required', { status: 400 });
     }
 
-    const pair = new WebSocketPair();
-    const [client, server] = Object.values(pair);
-
+    const [client, server] = Object.values(new WebSocketPair());
     const wsId = crypto.randomUUID();
-
-    server.accept();
-    this.connections.set(wsId, server);
-
-    server.addEventListener('message', async (event) => {
-      try {
-        const msg = JSON.parse(event.data as string) as ClientMessage;
-        await this.handleMessage(wsId, server, msg);
-      } catch {
-        this.send(server, { type: 'error', message: 'Invalid message' } as any);
-      }
-    });
-
-    server.addEventListener('close', () => this.handleDisconnect(wsId));
-    server.addEventListener('error', () => this.handleDisconnect(wsId));
-
+    await this.handleWebSocket(server, wsId);
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  // =============================
-  // Message Router
-  // =============================
-  private async handleMessage(wsId: string, ws: WebSocket, msg: ClientMessage) {
+  private async handleWebSocket(ws: WebSocket, wsId: string): Promise<void> {
+    ws.accept();
+    this.connections.set(wsId, ws);
+
+    ws.addEventListener('message', async (event) => {
+      try {
+        const message = JSON.parse(event.data as string) as ClientMessage;
+        await this.handleMessage(wsId, ws, message);
+      } catch (_err) {
+        this.sendToClient(ws, { type: 'error', code: 'PARSE_ERROR', message: 'Invalid message format' });
+      }
+    });
+
+    ws.addEventListener('close', () => this.handleDisconnect(wsId));
+    ws.addEventListener('error', () => this.handleDisconnect(wsId));
+  }
+
+  private async handleMessage(wsId: string, ws: WebSocket, message: ClientMessage): Promise<void> {
     this.roomState.lastActivityTs = Date.now();
 
-    switch (msg.type) {
+    switch (message.type) {
       case 'join_room':
-        await this.handleJoin(wsId, ws, msg.userId, msg.displayName);
+        await this.handleJoinRoom(wsId, ws, message);
         break;
-
       case 'make_move':
-        await this.handleMove(wsId, msg.index);
+        await this.handleMove(wsId, message);
         break;
-
       case 'restart_game':
-        await this.handleRestart();
+        await this.handleRestart(wsId, message);
         break;
-
+      case 'request_state':
+        this.sendToClient(ws, { type: 'state_sync', state: this.getPublicState() });
+        break;
       case 'ping':
-        this.send(ws, { type: 'pong' } as any);
+        this.sendToClient(ws, { type: 'pong' });
         break;
     }
   }
 
-  // =============================
-  // Join
-  // =============================
-  private async handleJoin(
+  private async handleJoinRoom(
     wsId: string,
     ws: WebSocket,
-    userId: string,
-    displayName: string
-  ) {
-    let player = this.roomState.players.find(p => p.userId === userId);
+    { userId, displayName, roomCode, gameType }: { userId: string; displayName: string; roomCode: string; gameType?: string }
+  ): Promise<void> {
+    const existingPlayer = this.roomState.players.find(p => p.userId === userId);
 
-    if (player) {
-      // Reconnect
-      player.connected = true;
-      player.wsId = wsId;
-    } else {
-      if (this.roomState.players.length >= 2) {
-        this.send(ws, { type: 'room_full' } as any);
-        return;
-      }
-
-      const symbol: PlayerSymbol =
-        this.roomState.players.length === 0 ? 'X' : 'O';
-
-      player = {
-        userId,
-        displayName,
-        symbol,
-        connected: true,
-        wsId,
-        disconnectedAt: null,
-      } as InternalPlayer;
-
-      this.roomState.players.push(player);
+    if (existingPlayer) {
+      existingPlayer.connected = true;
+      existingPlayer.ws = ws;
+      existingPlayer.wsId = wsId;
+      existingPlayer.disconnectedAt = null;
+      this.connections.set(wsId, ws);
+      this.sendToClient(ws, { type: 'joined', success: true, symbol: existingPlayer.symbol, roomCode });
+      this.broadcastStateSync();
+      return;
     }
 
-    if (this.roomState.players.filter(p => p.connected).length === 2) {
+    const activePlayers = this.roomState.players.filter(p =>
+      p.connected || (p.disconnectedAt && Date.now() - p.disconnectedAt < GRACE_PERIOD_MS)
+    );
+
+    const gameDef = this.getGameDefinition();
+    const maxPlayers = gameDef?.maxPlayers || 2;
+
+    if (activePlayers.length >= maxPlayers) {
+      this.sendToClient(ws, { type: 'room_full', message: 'Room is full' });
+      return;
+    }
+
+    if (!this.roomState.gameType && gameType) {
+      if (!getGame(gameType)) {
+        this.sendToClient(ws, { type: 'error', code: 'INVALID_GAME', message: 'Unknown game type' });
+        return;
+      }
+      this.roomState.gameType = gameType;
+      const def = getGame(gameType)!;
+      this.roomState.gameData = def.createInitialState();
+    }
+
+    const playerIndex = this.roomState.players.length;
+    const symbol = String.fromCharCode(65 + playerIndex); // A, B, C...
+
+    const newPlayer: InternalPlayer = {
+      userId, displayName, symbol, connected: true,
+      ws, wsId, disconnectedAt: null,
+    };
+    this.roomState.players.push(newPlayer);
+    this.connections.set(wsId, ws);
+
+    const currentGameDef = this.getGameDefinition();
+    const minPlayers = currentGameDef?.minPlayers || 2;
+
+    if (this.roomState.players.filter(p => p.connected).length >= minPlayers && this.roomState.status === 'waiting') {
       this.roomState.status = 'active';
     }
 
+    this.sendToClient(ws, { type: 'joined', success: true, symbol, roomCode, gameType: this.roomState.gameType });
+    this.broadcastStateSync();
     await this.persistState();
-    this.broadcastState();
   }
 
-  // =============================
-  // Move
-  // =============================
-  private async handleMove(wsId: string, index: number) {
-    const player = this.roomState.players.find(p => p.wsId === wsId);
-    if (!player) return;
+  private async handleMove(wsId: string, { userId, move }: { userId: string; move: unknown }): Promise<void> {
+    const player = this.roomState.players.find(p => p.userId === userId);
+    if (!player?.ws) return;
 
-    if (this.roomState.status !== 'active') return;
-    if (player.symbol !== this.roomState.turn) return;
-    if (this.roomState.board[index] !== null) return;
-
-    this.roomState.board[index] = player.symbol;
-    this.roomState.turn = player.symbol === 'X' ? 'O' : 'X';
-
-    const win = this.checkWin(player.symbol);
-
-    if (win) {
-      this.roomState.status = 'finished';
-      this.roomState.winner = player.symbol;
-      this.roomState.winningCells = win;
-    } else if (this.roomState.board.every(c => c !== null)) {
-      this.roomState.status = 'draw';
+    const gameDef = this.getGameDefinition();
+    if (!gameDef) {
+      this.sendToClient(player.ws, { type: 'error', code: 'NO_GAME', message: 'No game initialized' });
+      return;
     }
 
+    const validation = gameDef.validateMove(
+      this.roomState.gameData as BaseGameState,
+      move,
+      player.symbol
+    );
+
+    if (!validation.valid) {
+      this.sendToClient(player.ws, { type: 'error', code: 'INVALID_MOVE', message: validation.error || 'Invalid move' });
+      return;
+    }
+
+    const newGameData = gameDef.applyMove(
+      this.roomState.gameData as BaseGameState,
+      move,
+      player.symbol
+    );
+
+    this.roomState.gameData = newGameData;
+    this.roomState.currentPlayerIndex = (this.roomState.currentPlayerIndex + 1) % this.roomState.players.length;
+
+    const gameEnd = gameDef.checkGameEnd(newGameData);
+    if (gameEnd.ended) {
+      this.roomState.status = gameEnd.draw ? 'draw' : 'finished';
+      this.roomState.winner = gameEnd.winner;
+    }
+
+    this.broadcastMessage({ type: 'move_applied', state: this.getPublicState() });
     await this.persistState();
-    this.broadcastState();
   }
 
-  private async handleRestart() {
-    this.roomState.board = Array(9).fill(null);
-    this.roomState.turn = 'X';
+  private async handleRestart(wsId: string, { userId }: { userId: string }): Promise<void> {
+    const player = this.roomState.players.find(p => p.userId === userId);
+    if (!player || player.wsId !== wsId) return;
+
+    const gameDef = this.getGameDefinition();
+    if (!gameDef) return;
+
+    this.roomState.gameData = gameDef.createRestartState(this.roomState.gameData as BaseGameState);
     this.roomState.status = 'active';
     this.roomState.winner = null;
-    this.roomState.winningCells = null;
+    this.roomState.currentPlayerIndex = 0;
 
-    await this.persistState();
-    this.broadcastState();
-  }
-
-  // =============================
-  // Utilities
-  // =============================
-  private checkWin(symbol: PlayerSymbol): number[] | null {
-    const wins = [
-      [0,1,2],[3,4,5],[6,7,8],
-      [0,3,6],[1,4,7],[2,5,8],
-      [0,4,8],[2,4,6]
-    ];
-
-    for (const combo of wins) {
-      if (combo.every(i => this.roomState.board[i] === symbol)) {
-        return combo;
-      }
-    }
-
-    return null;
-  }
-
-  private handleDisconnect(wsId: string) {
-    const player = this.roomState.players.find(p => p.wsId === wsId);
-    if (player) {
-      player.connected = false;
-      player.wsId = '';
-    }
-
-    this.connections.delete(wsId);
-  }
-
-  private async persistState() {
-    await this.state.storage.put('roomState', this.roomState);
-  }
-
-  private send(ws: WebSocket, msg: ServerMessage) {
-    try {
-      ws.send(JSON.stringify(msg));
-    } catch {}
-  }
-
-  private broadcastState() {
-    const publicState = {
-      board: this.roomState.board,
-      turn: this.roomState.turn,
-      status: this.roomState.status,
-      winner: this.roomState.winner,
-      winningCells: this.roomState.winningCells,
-      players: this.roomState.players.map(p => ({
-        userId: p.userId,
-        displayName: p.displayName,
-        symbol: p.symbol,
-        connected: p.connected,
-      })),
-    };
-
-    for (const ws of this.connections.values()) {
-      this.send(ws, { type: 'state_sync', state: publicState } as any);
-    }
+    this.broadcastStateSync();
   }
 }
