@@ -32,3 +32,32 @@
 
 ## Current File Being Fixed
 - `durable-object.ts` — was incomplete, need to finish writing it
+
+## 2026-03-01 Updates
+- Added new game mode: **Rock Paper Scissors** (`rockpaperscissors`)
+  - Files added:
+    - `src/games/rockpaperscissors/types.ts`
+    - `src/games/rockpaperscissors/Board.tsx`
+    - `src/games/rockpaperscissors/index.ts`
+  - Registered in `src/games/registry.ts`
+- Created and pushed branch: `version.0.5`
+- Deployed successfully to Cloudflare Worker:
+  - URL: `https://family-gaming-platform.juniorcrockett23124-cmd.workers.dev`
+  - Version ID: `62ab7226-3b0d-49be-8495-e7c2d7cf487e`
+
+## 2026-03-01 Later Updates
+- Added new game mode: **Dots and Boxes** (`dotsandboxes`)
+  - Files added:
+    - `src/games/dotsandboxes/types.ts`
+    - `src/games/dotsandboxes/Board.tsx`
+    - `src/games/dotsandboxes/index.ts`
+  - Registered in `src/games/registry.ts`
+- Build passed (`npm run build`)
+- Pushed to git branch: `version.0.5`
+  - Commit: `03fa423` (`feat: add dots and boxes game`)
+- Deployed to Cloudflare Worker:
+  - URL: `https://family-gaming-platform.juniorcrockett23124-cmd.workers.dev`
+  - Version ID: `cea2d586-1994-48e1-b37b-8076ed3689fe`
+- Deployed UI to Cloudflare Pages:
+  - Deployment URL: `https://a96945c0.family-gaming-platform.pages.dev`
+  - Alias URL: `https://version-0-5.family-gaming-platform.pages.dev`
