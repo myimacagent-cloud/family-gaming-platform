@@ -23,11 +23,12 @@ export default function Room() {
   const location = useLocation();
   const userId = localStorage.getItem('userId') || '';
   const [showCopied, setShowCopied] = useState(false);
-  const { connectionState, roomState, sendMessage, reconnect } = useWebSocket(roomCode || '');
+  const { connectionState, roomState, gameType: wsGameType, sendMessage, reconnect } = useWebSocket(roomCode || '');
 
   const gameType = useMemo(() => {
-    return (location.state as { gameType?: string })?.gameType || roomState?.gameType || '';
-  }, [location.state, roomState?.gameType]);
+    // Priority: 1) location state (from creating room), 2) websocket gameType, 3) roomState gameType
+    return (location.state as { gameType?: string })?.gameType || wsGameType || roomState?.gameType || '';
+  }, [location.state, wsGameType, roomState?.gameType]);
 
   const gameDefinition = useMemo(() => {
     return gameType ? getGame(gameType) : undefined;
@@ -50,7 +51,8 @@ export default function Room() {
   };
 
   const currentPlayer = roomState?.players.find(p => p.userId === userId);
-  const myTurn = currentPlayer?.symbol === roomState?.turn && roomState?.status === 'active';
+  const currentPlayerSymbol = roomState?.players[roomState?.currentPlayerIndex ?? 0]?.symbol;
+  const myTurn = currentPlayer?.symbol === currentPlayerSymbol && roomState?.status === 'active';
   const isWaiting = roomState?.status === 'waiting';
   const isFinished = roomState?.status === 'finished' || roomState?.status === 'draw';
 

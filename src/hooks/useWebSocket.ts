@@ -6,6 +6,7 @@ type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'offline';
 interface WebSocketHook {
   connectionState: ConnectionState;
   roomState: RoomState | null;
+  gameType: string | null;
   error: string | null;
   sendMessage: (msg: ClientMessage) => void;
   reconnect: () => void;
@@ -18,6 +19,7 @@ const MAX_DELAY_MS = 30000;
 export function useWebSocket(roomCode: string): WebSocketHook {
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
   const [roomState, setRoomState] = useState<RoomState | null>(null);
+  const [gameType, setGameType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const ws = useRef<WebSocket | null>(null);
@@ -72,6 +74,9 @@ export function useWebSocket(roomCode: string): WebSocketHook {
         switch (msg.type) {
           case 'state_sync':
             setRoomState(msg.state);
+            if (msg.state.gameType && !gameType) {
+              setGameType(msg.state.gameType);
+            }
             break;
           case 'move_applied':
             setRoomState(msg.state);
@@ -84,6 +89,9 @@ export function useWebSocket(roomCode: string): WebSocketHook {
             break;
           case 'joined':
             console.log(`[WS] Joined as ${msg.symbol}`);
+            if (msg.gameType) {
+              setGameType(msg.gameType);
+            }
             break;
           case 'room_full':
             setError('Room is full');
@@ -143,5 +151,5 @@ export function useWebSocket(roomCode: string): WebSocketHook {
     };
   }, [connect]);
 
-  return { connectionState, roomState, error, sendMessage, reconnect };
+  return { connectionState, roomState, gameType, error, sendMessage, reconnect };
 }

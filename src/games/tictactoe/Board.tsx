@@ -14,6 +14,7 @@ export function TicTacToeBoard({
   const isFinished = state.status === 'finished' || state.status === 'draw';
   
   const handleCellClick = (index: number) => {
+    console.log("handleCellClick:: ", index)
     if (disabled || !isMyTurn || state.board[index] !== null || isFinished) {
       return;
     }
