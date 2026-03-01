@@ -36,6 +36,7 @@ export interface RoomState {
   status: GameStatus;
   winner: string | null;
   currentPlayerIndex: number;
+  roundNumber: number;
   // Game-specific state is stored in the `gameData` field
   gameData: unknown;
 }
@@ -66,7 +67,7 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: 'pong' }
-  | { type: 'joined'; success: boolean; symbol: string; roomCode: string }
+  | { type: 'joined'; success: boolean; symbol: string; roomCode: string; gameType?: string }
   | { type: 'room_full'; message: string }
   | { type: 'error'; code: string; message: string }
   | { type: 'state_sync'; state: RoomState }

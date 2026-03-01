@@ -1,25 +1,32 @@
 import type { GameBoardProps } from '../types';
-import type { TicTacToeState, TicTacToeMove } from './types';
+import type { TicTacToe3PieceState, TicTacToe3PieceMove } from './logic';
 
-interface TicTacToeBoardProps extends GameBoardProps<TicTacToeState> {}
+interface TicTacToe3PieceBoardProps extends GameBoardProps<TicTacToe3PieceState> {}
 
-export function TicTacToeBoard({
+export function TicTacToe3PieceBoard({
   state,
   mySymbol,
   onMove,
   disabled,
-}: TicTacToeBoardProps) {
+}: TicTacToe3PieceBoardProps) {
   const isMyTurn = state.players[state.currentPlayerIndex]?.symbol === mySymbol;
   const isFinished = state.status === 'finished' || state.status === 'draw';
-  
+
+  const currentTurnSymbol = state.players[state.currentPlayerIndex]?.symbol;
+  const expiringIndex = !isFinished
+    ? state.playerStates.find(
+        (p) => p.symbol === currentTurnSymbol && p.moves.length === 3,
+      )?.moves[0]
+    : undefined;
+
   const handleCellClick = (index: number) => {
     if (disabled || !isMyTurn || state.board[index] !== null || isFinished) {
       return;
     }
-    const move: TicTacToeMove = { index };
+    const move: TicTacToe3PieceMove = { index };
     onMove(move);
   };
-  
+
   return (
     <div
       style={{
@@ -32,6 +39,7 @@ export function TicTacToeBoard({
     >
       {state.board.map((cell, index) => {
         const isWinning = state.winningCells?.includes(index) ?? false;
+        const isExpiring = index === expiringIndex;
         return (
           <button
             key={index}
@@ -51,10 +59,13 @@ export function TicTacToeBoard({
                 ? '#10b981'
                 : 'rgba(255,255,255,0.95)',
               color: cell === 'X' ? '#667eea' : '#764ba2',
-              transition: 'transform 0.1s',
+              opacity: isExpiring ? 0.35 : 1,
+              transition: 'transform 0.1s, opacity 0.2s',
               boxShadow: isWinning
                 ? '0 0 20px #10b981'
-                : '0 4px 10px rgba(0,0,0,0.2)',
+                : isExpiring
+                  ? '0 0 0 2px rgba(239,68,68,0.45), 0 4px 10px rgba(0,0,0,0.2)'
+                  : '0 4px 10px rgba(0,0,0,0.2)',
             }}
           >
             {cell}
@@ -65,4 +76,4 @@ export function TicTacToeBoard({
   );
 }
 
-export default TicTacToeBoard;
+export default TicTacToe3PieceBoard;
