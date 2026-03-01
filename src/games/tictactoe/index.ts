@@ -1,11 +1,11 @@
-import type { GameDefinition, GamePlayer, MoveValidation, BaseGameState } from '../types';
+import type { GameDefinition, MoveValidation } from '../types';
 import type { TicTacToeState, TicTacToeMove } from './types';
 import { checkWin } from './types';
 import { TicTacToeBoard } from './Board';
 
 const GAME_ID = 'tictactoe';
 
-function createInitialState(roomCode: string): TicTacToeState {
+function createInitialState(_roomCode: string): TicTacToeState {
   return {
     gameType: GAME_ID,
     players: [],

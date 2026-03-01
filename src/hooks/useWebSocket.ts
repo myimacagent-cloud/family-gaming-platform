@@ -16,10 +16,10 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_DELAY_MS = 1000;
 const MAX_DELAY_MS = 30000;
 
-export function useWebSocket(roomCode: string): WebSocketHook {
+export function useWebSocket(roomCode: string, initialGameType?: string): WebSocketHook {
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
   const [roomState, setRoomState] = useState<RoomState | null>(null);
-  const [gameType, setGameType] = useState<string | null>(null);
+  const [gameType, setGameType] = useState<string | null>(initialGameType || null);
   const [error, setError] = useState<string | null>(null);
 
   const ws = useRef<WebSocket | null>(null);
@@ -57,6 +57,7 @@ export function useWebSocket(roomCode: string): WebSocketHook {
         userId,
         displayName,
         roomCode,
+        ...(initialGameType ? { gameType: initialGameType } : {}),
       };
       socket.send(JSON.stringify(joinMsg));
 
@@ -125,7 +126,7 @@ export function useWebSocket(roomCode: string): WebSocketHook {
       console.error('[WS] Error:', err);
       setError('Connection error');
     };
-  }, [roomCode, userId, displayName]);
+  }, [roomCode, userId, displayName, initialGameType]);
 
   const sendMessage = useCallback((msg: ClientMessage) => {
     if (ws.current?.readyState === WebSocket.OPEN) {

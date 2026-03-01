@@ -23,12 +23,13 @@ export default function Room() {
   const location = useLocation();
   const userId = localStorage.getItem('userId') || '';
   const [showCopied, setShowCopied] = useState(false);
-  const { connectionState, roomState, gameType: wsGameType, sendMessage, reconnect } = useWebSocket(roomCode || '');
+  const initialGameType = (location.state as { gameType?: string } | null)?.gameType;
+  const { connectionState, roomState, gameType: wsGameType, error, sendMessage, reconnect } = useWebSocket(roomCode || '', initialGameType);
 
   const gameType = useMemo(() => {
     // Priority: 1) location state (from creating room), 2) websocket gameType, 3) roomState gameType
-    return (location.state as { gameType?: string })?.gameType || wsGameType || roomState?.gameType || '';
-  }, [location.state, wsGameType, roomState?.gameType]);
+    return initialGameType || wsGameType || roomState?.gameType || '';
+  }, [initialGameType, wsGameType, roomState?.gameType]);
 
   const gameDefinition = useMemo(() => {
     return gameType ? getGame(gameType) : undefined;
@@ -105,6 +106,12 @@ export default function Room() {
         </div>
       </div>
 
+      {error && (
+        <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', color: '#fff', borderRadius: '12px', padding: '10px 14px', marginBottom: '14px', fontWeight: 600, textAlign: 'center' }}>
+          {error}
+        </div>
+      )}
+
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '25px' }}>
         {roomState && (
           <div style={{ display: 'flex', gap: '40px', padding: '20px 40px', background: 'rgba(255,255,255,0.95)', borderRadius: '15px', alignItems: 'center' }}>
@@ -127,6 +134,12 @@ export default function Room() {
         )}
 
         {gameBoard}
+
+        {roomState && !gameDefinition && (
+          <div style={{ background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.35)', color: '#fff', borderRadius: '12px', padding: '10px 14px', fontWeight: 600 }}>
+            This room’s game type could not be loaded. Try returning to the lobby and rejoining.
+          </div>
+        )}
 
         {isFinished && (
           <button onClick={handleRestart} style={{ padding: '16px 40px', fontSize: '18px', fontWeight: 600, background: 'white', color: '#667eea', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>

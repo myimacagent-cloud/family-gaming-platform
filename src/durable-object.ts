@@ -1,4 +1,4 @@
-import type { ClientMessage, ServerMessage, PublicPlayer, InternalPlayer, RoomState } from './types/messages';
+import type { ClientMessage, ServerMessage, InternalPlayer, RoomState } from './types/messages';
 import { GRACE_PERIOD_MS } from './types/messages';
 import { getGame } from './games/registry';
 import type { GameDefinition, BaseGameState } from './games/types';
@@ -140,6 +140,32 @@ export class GameRoom {
     } as RoomState;
   }
 
+  private syncGameDataMetadata(): void {
+    if (!this.roomState.gameData || typeof this.roomState.gameData !== 'object') return;
+
+    const gameData = this.roomState.gameData as Record<string, unknown>;
+    gameData.players = this.roomState.players.map(p => ({
+      userId: p.userId,
+      displayName: p.displayName,
+      symbol: p.symbol,
+      connected: p.connected,
+    }));
+    gameData.gameType = this.roomState.gameType;
+    gameData.status = this.roomState.status;
+    gameData.winner = this.roomState.winner;
+    gameData.currentPlayerIndex = this.roomState.currentPlayerIndex;
+  }
+
+  private syncRoomMetadataFromGameData(gameData: BaseGameState): void {
+    if (typeof gameData.currentPlayerIndex === 'number') {
+      this.roomState.currentPlayerIndex = gameData.currentPlayerIndex;
+    }
+    if (gameData.status) {
+      this.roomState.status = gameData.status;
+    }
+    this.roomState.winner = gameData.winner;
+  }
+
   private sendToClient(ws: WebSocket, message: ServerMessage): void {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message));
@@ -184,7 +210,9 @@ export class GameRoom {
         symbol: existingPlayer.symbol,
         roomCode
       });
+      this.syncGameDataMetadata();
       this.broadcastStateSync();
+      await this.persistState();
       return;
     }
 
@@ -244,6 +272,8 @@ export class GameRoom {
       this.roomState.status = 'active';
     }
 
+    this.syncGameDataMetadata();
+
     this.sendToClient(ws, {
       type: 'joined',
       success: true,
@@ -259,7 +289,8 @@ export class GameRoom {
   private async handleMove(
     _wsId: string,
     { userId, move }: { userId: string; move: unknown }
-  ): Promise<void> {    const player = this.roomState.players.find(p => p.userId === userId);
+  ): Promise<void> {
+    const player = this.roomState.players.find(p => p.userId === userId);
     if (!player?.ws) return;
 
     const gameDef = this.getGameDefinition();
@@ -267,6 +298,9 @@ export class GameRoom {
       this.sendToClient(player.ws, { type: 'error', code: 'NO_GAME', message: 'No game initialized' });
       return;
     }
+
+    // Keep game metadata synchronized so validation logic has current players/turn/status.
+    this.syncGameDataMetadata();
 
     const validation = gameDef.validateMove(
       this.roomState.gameData as BaseGameState,
@@ -286,13 +320,15 @@ export class GameRoom {
     );
 
     this.roomState.gameData = newGameData;
-    this.roomState.currentPlayerIndex = (this.roomState.currentPlayerIndex + 1) % this.roomState.players.length;
+    this.syncRoomMetadataFromGameData(newGameData as BaseGameState);
 
     const gameEnd = gameDef.checkGameEnd(newGameData);
     if (gameEnd.ended) {
       this.roomState.status = gameEnd.draw ? 'draw' : 'finished';
       this.roomState.winner = gameEnd.winner;
     }
+
+    this.syncGameDataMetadata();
 
     this.broadcastMessage({ type: 'move_applied', state: this.getPublicState() });
     await this.persistState();
@@ -309,6 +345,8 @@ export class GameRoom {
     this.roomState.status = 'active';
     this.roomState.winner = null;
     this.roomState.currentPlayerIndex = 0;
+    this.syncRoomMetadataFromGameData(this.roomState.gameData as BaseGameState);
+    this.syncGameDataMetadata();
 
     this.broadcastStateSync();
     await this.persistState();

@@ -6,9 +6,6 @@ export const gameRegistry: GameRegistry = {
   [ticTacToeGame.id]: ticTacToeGame,
 };
 
-// Type for game IDs
-type GameId = keyof typeof gameRegistry;
-
 // Helper functions
 export function getGame(id: string): GameDefinition | undefined {
   return gameRegistry[id];
