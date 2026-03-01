@@ -92,14 +92,15 @@ export function ChessBoard({
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(8, 1fr)',
+        gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
         gap: '2px',
-        width: '100%',
-        maxWidth: '430px',
-        height: '430px',
+        width: 'min(430px, calc(100vw - 40px))',
+        aspectRatio: '1 / 1',
         background: '#1f2937',
         padding: '6px',
         borderRadius: '12px',
+        boxSizing: 'border-box',
+        margin: '0 auto',
       }}
     >
       {board.map((row, rowIndex) =>
@@ -116,18 +117,23 @@ export function ChessBoard({
               onClick={() => handleSquareClick(square, piece)}
               disabled={disabled || isFinished || !isMyTurn}
               style={{
-                border: isSelected ? '3px solid #37cef4' : 'none',
+                border: isSelected ? '2px solid #37cef4' : 'none',
                 borderRadius: '6px',
                 background: isLight ? '#dfdfdf' : '#5c5b5c',
                 color: '#111827',
-                fontSize: '44px',
+                fontSize: 'clamp(24px, 6vw, 44px)',
                 cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 userSelect: 'none',
                 position: 'relative',
-                height: '50px'
+                width: '100%',
+                aspectRatio: '1 / 1',
+                minWidth: 0,
+                minHeight: 0,
+                padding: 0,
+                boxSizing: 'border-box',
               }}
             >
               {piece ? PIECES[piece.color][piece.type] : ''}
