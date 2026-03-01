@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { getGame } from '../games/registry';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -17,12 +17,55 @@ const STATUS_TEXT: Record<string, string> = {
   offline: 'Offline',
 };
 
+type StatLine = {
+  wins: number;
+  draws: number;
+  losses: number;
+};
+
+type StatsByGame = Record<string, StatLine>;
+type StatsByUser = Record<string, StatsByGame>;
+
+const DEFAULT_STATS: StatLine = { wins: 0, draws: 0, losses: 0 };
+const STATS_KEY = 'fgp.userStats.v1';
+
+function getStoredStats(): StatsByUser {
+  try {
+    const raw = localStorage.getItem(STATS_KEY);
+    return raw ? (JSON.parse(raw) as StatsByUser) : {};
+  } catch {
+    return {};
+  }
+}
+
+function updateStats(userId: string, gameType: string, updater: (current: StatLine) => StatLine): StatLine {
+  const all = getStoredStats();
+  const userStats = all[userId] || {};
+  const current = userStats[gameType] || DEFAULT_STATS;
+  const next = updater(current);
+
+  all[userId] = {
+    ...userStats,
+    [gameType]: next,
+  };
+
+  localStorage.setItem(STATS_KEY, JSON.stringify(all));
+  return next;
+}
+
+function getStatsForGame(userId: string, gameType: string): StatLine {
+  const all = getStoredStats();
+  return all[userId]?.[gameType] || DEFAULT_STATS;
+}
+
 export default function Room() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const userId = localStorage.getItem('userId') || '';
   const [showCopied, setShowCopied] = useState(false);
+  const [gameStats, setGameStats] = useState<StatLine>(DEFAULT_STATS);
+  const [lastRecordedRound, setLastRecordedRound] = useState<number>(0);
   const initialGameType = (location.state as { gameType?: string } | null)?.gameType;
   const { connectionState, roomState, gameType: wsGameType, error, sendMessage, reconnect } = useWebSocket(roomCode || '', initialGameType);
 
@@ -34,6 +77,37 @@ export default function Room() {
   const gameDefinition = useMemo(() => {
     return gameType ? getGame(gameType) : undefined;
   }, [gameType]);
+
+  useEffect(() => {
+    if (!userId || !gameType) return;
+    setGameStats(getStatsForGame(userId, gameType));
+    setLastRecordedRound(0);
+  }, [userId, gameType, roomCode]);
+
+  useEffect(() => {
+    if (!roomState || !userId || !gameType) return;
+    const gameEnded = roomState.status === 'finished' || roomState.status === 'draw';
+    if (!gameEnded) return;
+
+    const round = roomState.roundNumber || 1;
+    if (round === lastRecordedRound) return;
+
+    const me = roomState.players.find(p => p.userId === userId);
+    if (!me) return;
+
+    const nextStats = updateStats(userId, gameType, (current) => {
+      if (roomState.status === 'draw') {
+        return { ...current, draws: current.draws + 1 };
+      }
+      const didWin = roomState.winner === me.symbol;
+      return didWin
+        ? { ...current, wins: current.wins + 1 }
+        : { ...current, losses: current.losses + 1 };
+    });
+
+    setGameStats(nextStats);
+    setLastRecordedRound(round);
+  }, [roomState, userId, gameType, lastRecordedRound]);
 
   const handleMakeMove = (move: unknown) => {
     if (connectionState !== 'connected') return;
@@ -130,6 +204,14 @@ export default function Room() {
         {roomState && (
           <div style={{ fontSize: '20px', fontWeight: 700, color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.3)', padding: '0 20px', textAlign: 'center' }}>
             {statusMessage()}
+          </div>
+        )}
+
+        {gameType && (
+          <div style={{ display: 'flex', gap: '14px', background: 'rgba(255,255,255,0.92)', borderRadius: '12px', padding: '10px 14px', fontWeight: 700, color: '#333' }}>
+            <span>🏆 Wins: {gameStats.wins}</span>
+            <span>🤝 Draws: {gameStats.draws}</span>
+            <span>📉 Losses: {gameStats.losses}</span>
           </div>
         )}
 

@@ -38,8 +38,8 @@ export function TicTacToeBoard({
             onClick={() => handleCellClick(index)}
             disabled={!isMyTurn || cell !== null || isFinished || disabled}
             style={{
-              width: '100%',
-              height: '100%',
+              width: '100px',
+              height: '100px',
               fontSize: '48px',
               fontWeight: 'bold',
               border: 'none',

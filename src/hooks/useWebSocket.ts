@@ -75,27 +75,33 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
         switch (msg.type) {
           case 'state_sync':
             setRoomState(msg.state);
+            setError(null);
             if (msg.state.gameType && !gameType) {
               setGameType(msg.state.gameType);
             }
             break;
           case 'move_applied':
             setRoomState(msg.state);
+            setError(null);
             break;
           case 'player_update':
             setRoomState(prev => prev ? { ...prev, players: msg.players } : null);
+            setError(null);
             break;
           case 'error':
             setError(msg.message);
             break;
           case 'joined':
             console.log(`[WS] Joined as ${msg.symbol}`);
+            setError(null);
             if (msg.gameType) {
               setGameType(msg.gameType);
             }
             break;
           case 'room_full':
             setError('Room is full');
+            break;
+          case 'pong':
             break;
         }
       } catch (err) {

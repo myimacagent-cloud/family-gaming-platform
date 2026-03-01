@@ -36,6 +36,7 @@ export interface RoomState {
   status: GameStatus;
   winner: string | null;
   currentPlayerIndex: number;
+  roundNumber: number;
   // Game-specific state is stored in the `gameData` field
   gameData: unknown;
 }

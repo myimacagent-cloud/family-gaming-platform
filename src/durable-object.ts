@@ -10,6 +10,7 @@ interface InternalRoomState {
   status: 'waiting' | 'active' | 'finished' | 'draw';
   winner: string | null;
   currentPlayerIndex: number;
+  roundNumber: number;
   gameData: unknown;
   createdAt: number;
   lastActivityTs: number;
@@ -31,6 +32,7 @@ export class GameRoom {
       status: 'waiting',
       winner: null,
       currentPlayerIndex: 0,
+      roundNumber: 1,
       gameData: null,
       createdAt: Date.now(),
       lastActivityTs: Date.now(),
@@ -40,7 +42,10 @@ export class GameRoom {
   async initializeFromStorage(): Promise<void> {
     const stored = await this.state.storage.get<InternalRoomState>('roomState');
     if (stored) {
-      this.roomState = stored;
+      this.roomState = {
+        ...stored,
+        roundNumber: typeof stored.roundNumber === 'number' ? stored.roundNumber : 1,
+      };
     }
   }
 
@@ -82,11 +87,25 @@ export class GameRoom {
     this.connections.set(wsId, ws);
     
     ws.addEventListener('message', async (event) => {
+      const raw = event.data;
+      let payload: string | null = null;
+
+      if (typeof raw === 'string') {
+        payload = raw;
+      } else if (raw instanceof ArrayBuffer) {
+        payload = new TextDecoder().decode(raw);
+      }
+
+      if (!payload) {
+        // Ignore non-text / non-app frames instead of surfacing user-facing errors.
+        return;
+      }
+
       try {
-        const message = JSON.parse(event.data as string) as ClientMessage;
+        const message = JSON.parse(payload) as ClientMessage;
         await this.handleMessage(wsId, ws, message);
       } catch (_err) {
-        this.sendToClient(ws, { type: 'error', code: 'PARSE_ERROR', message: 'Invalid message format' });
+        // Ignore malformed payloads to avoid noisy UI errors while connection is otherwise healthy.
       }
     });
     
@@ -134,6 +153,7 @@ export class GameRoom {
       status: this.roomState.status,
       winner: this.roomState.winner,
       currentPlayerIndex: this.roomState.currentPlayerIndex,
+      roundNumber: this.roomState.roundNumber,
       gameData: this.roomState.gameData,
       // Spread game-specific properties for direct access (excluding room-level properties)
       ...gameSpecificData,
@@ -341,11 +361,21 @@ export class GameRoom {
     const gameDef = this.getGameDefinition();
     if (!gameDef) return;
 
+    const previousWinner = this.roomState.winner;
+
     this.roomState.gameData = gameDef.createRestartState(this.roomState.gameData as BaseGameState);
     this.roomState.status = 'active';
     this.roomState.winner = null;
-    this.roomState.currentPlayerIndex = 0;
-    this.syncRoomMetadataFromGameData(this.roomState.gameData as BaseGameState);
+    this.roomState.roundNumber += 1;
+
+    if (previousWinner) {
+      const winnerIndex = this.roomState.players.findIndex(p => p.symbol === previousWinner);
+      this.roomState.currentPlayerIndex = winnerIndex >= 0 ? winnerIndex : 0;
+    } else {
+      this.roomState.currentPlayerIndex = 0;
+    }
+
+    (this.roomState.gameData as BaseGameState).currentPlayerIndex = this.roomState.currentPlayerIndex;
     this.syncGameDataMetadata();
 
     this.broadcastStateSync();
