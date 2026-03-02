@@ -4,9 +4,8 @@ import { DotsAndBoxesBoard } from './Board';
 import { horizontalEdgeIndex, verticalEdgeIndex, boxIndex } from './types';
 
 const GAME_ID = 'dotsandboxes';
-
-const DOT_ROWS = 3; // 2x2 boxes keeps it quick/fun
-const DOT_COLS = 3;
+const DOT_ROWS = 10; // 10 dots = 9x9 boxes
+const DOT_COLS = 10;
 
 function createInitialState(_roomCode: string): DotsAndBoxesState {
   return {
@@ -27,7 +26,6 @@ function createInitialState(_roomCode: string): DotsAndBoxesState {
 function createRestartState(currentState: DotsAndBoxesState): DotsAndBoxesState {
   const scores: Record<string, number> = {};
   for (const p of currentState.players) scores[p.symbol] = 0;
-
   return {
     ...currentState,
     status: 'active',
@@ -44,16 +42,13 @@ function validateMove(state: DotsAndBoxesState, move: DotsAndBoxesMove, playerSy
   if (state.status !== 'active') {
     return { valid: false, error: 'Game is not active' };
   }
-
   const currentPlayer = state.players[state.currentPlayerIndex];
   if (currentPlayer?.symbol !== playerSymbol) {
     return { valid: false, error: 'Not your turn' };
   }
-
   if (!move || (move.orientation !== 'h' && move.orientation !== 'v')) {
     return { valid: false, error: 'Invalid move orientation' };
   }
-
   if (move.orientation === 'h') {
     if (move.index < 0 || move.index >= state.horizontalEdges.length) {
       return { valid: false, error: 'Invalid horizontal edge' };
@@ -69,7 +64,6 @@ function validateMove(state: DotsAndBoxesState, move: DotsAndBoxesMove, playerSy
       return { valid: false, error: 'Edge already taken' };
     }
   }
-
   return { valid: true };
 }
 
@@ -92,15 +86,11 @@ function applyMove(state: DotsAndBoxesState, move: DotsAndBoxesMove, playerSymbo
   const horizontalEdges = [...state.horizontalEdges];
   const verticalEdges = [...state.verticalEdges];
   const boxes = [...state.boxes];
-  const scores: Record<string, number> = {
-    ...(state.scores || {}),
-  };
-
+  const scores: Record<string, number> = { ...(state.scores || {}) };
   for (const p of state.players) {
     if (typeof scores[p.symbol] !== 'number') scores[p.symbol] = 0;
   }
 
-  // Mark edge
   let touchedBoxes: Array<{ r: number; c: number }> = [];
   if (move.orientation === 'h') {
     horizontalEdges[move.index] = true;
@@ -116,7 +106,6 @@ function applyMove(state: DotsAndBoxesState, move: DotsAndBoxesMove, playerSymbo
     if (c < state.cols - 1) touchedBoxes.push({ r, c });
   }
 
-  // Capture any completed boxes
   let claimed = 0;
   for (const b of touchedBoxes) {
     const bIdx = boxIndex(state.cols, b.r, b.c);
@@ -150,50 +139,25 @@ function applyMove(state: DotsAndBoxesState, move: DotsAndBoxesMove, playerSymbo
     };
   }
 
-  // Determine winner on finish
   const [p1, p2] = state.players;
   const s1 = p1 ? (scores[p1.symbol] ?? 0) : 0;
   const s2 = p2 ? (scores[p2.symbol] ?? 0) : 0;
-
   if (s1 === s2) {
-    return {
-      ...state,
-      horizontalEdges,
-      verticalEdges,
-      boxes,
-      scores,
-      currentPlayerIndex: nextPlayerIndex,
-      winner: null,
-      status: 'draw',
-    };
+    return { ...state, horizontalEdges, verticalEdges, boxes, scores, currentPlayerIndex: nextPlayerIndex, winner: null, status: 'draw' };
   }
-
-  return {
-    ...state,
-    horizontalEdges,
-    verticalEdges,
-    boxes,
-    scores,
-    currentPlayerIndex: nextPlayerIndex,
-    winner: s1 > s2 ? p1.symbol : (p2?.symbol ?? null),
-    status: 'finished',
-  };
+  return { ...state, horizontalEdges, verticalEdges, boxes, scores, currentPlayerIndex: nextPlayerIndex, winner: s1 > s2 ? p1.symbol : (p2?.symbol ?? null), status: 'finished' };
 }
 
 function checkGameEnd(state: DotsAndBoxesState): { ended: boolean; winner: string | null; draw: boolean } {
-  if (state.status === 'finished') {
-    return { ended: true, winner: state.winner, draw: false };
-  }
-  if (state.status === 'draw') {
-    return { ended: true, winner: null, draw: true };
-  }
+  if (state.status === 'finished') return { ended: true, winner: state.winner, draw: false };
+  if (state.status === 'draw') return { ended: true, winner: null, draw: true };
   return { ended: false, winner: null, draw: false };
 }
 
 export const dotsAndBoxesGame: GameDefinition<DotsAndBoxesState, DotsAndBoxesMove> = {
   id: GAME_ID,
-  displayName: 'Dots and Boxes',
-  description: 'Draw lines, complete boxes, and score more than your opponent.',
+  displayName: 'Dots and Boxes (9×9)',
+  description: 'Connect dots to complete 9×9 boxes. Play online with family!',
   minPlayers: 2,
   maxPlayers: 2,
   createInitialState,
