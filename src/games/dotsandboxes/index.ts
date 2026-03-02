@@ -3,7 +3,7 @@ import type { DotsAndBoxesState, DotsAndBoxesMove } from './types';
 import { DotsAndBoxesBoard } from './Board';
 import { horizontalEdgeIndex, verticalEdgeIndex, boxIndex } from './types';
 
-const GAME_ID = 'dotsandboxes';
+const GAME_ID = 'dotsandboxes-v81';
 const DOT_ROWS = 10; // 10 dots = 9x9 boxes
 const DOT_COLS = 10;
 

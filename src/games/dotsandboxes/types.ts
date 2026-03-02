@@ -3,7 +3,7 @@ import type { BaseGameState } from '../types';
 export type EdgeOrientation = 'h' | 'v';
 
 export interface DotsAndBoxesState extends BaseGameState {
-  gameType: 'dotsandboxes';
+  gameType: 'dotsandboxes-v81';
   rows: number; // dot rows
   cols: number; // dot cols
   horizontalEdges: boolean[]; // rows * (cols - 1)
