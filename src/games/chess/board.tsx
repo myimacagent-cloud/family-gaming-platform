@@ -89,72 +89,88 @@ export function ChessBoard({
   };
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
-        gap: '2px',
-        width: 'min(430px, calc(100vw - 40px))',
-        aspectRatio: '1 / 1',
-        background: '#1f2937',
-        padding: '6px',
-        borderRadius: '12px',
-        boxSizing: 'border-box',
-        margin: '0 auto',
-      }}
-    >
-      {board.map((row, rowIndex) =>
-        row.map((piece, colIndex) => {
-          const rank = 8 - rowIndex;
-          const file = FILES[colIndex];
-          const square = `${file}${rank}` as Square;
-          const isLight = (rowIndex + colIndex) % 2 === 0;
-          const isSelected = selectedSquare === square;
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.92)',
+          borderRadius: 12,
+          padding: '8px 12px',
+          fontWeight: 700,
+          color: '#334155',
+          textAlign: 'center',
+        }}
+      >
+        {isFinished ? '🏁 Game over!' : isMyTurn ? '🌟 Your turn! Pick a piece, then tap where it should go.' : '⏳ Opponent\'s turn'}
+      </div>
 
-          return (
-            <button
-              key={square}
-              onClick={() => handleSquareClick(square, piece)}
-              disabled={disabled || isFinished || !isMyTurn}
-              style={{
-                border: isSelected ? '2px solid #37cef4' : 'none',
-                borderRadius: '6px',
-                background: isLight ? '#dfdfdf' : '#5c5b5c',
-                color: '#111827',
-                fontSize: 'clamp(24px, 6vw, 44px)',
-                cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                userSelect: 'none',
-                position: 'relative',
-                width: '100%',
-                aspectRatio: '1 / 1',
-                minWidth: 0,
-                minHeight: 0,
-                padding: 0,
-                boxSizing: 'border-box',
-              }}
-            >
-              {piece ? PIECES[piece.color][piece.type] : ''}
-              {(rank === 1 || file === 'a') && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    bottom: '2px',
-                    right: '4px',
-                    fontSize: '10px',
-                    color: 'rgba(17,24,39,0.55)',
-                    fontWeight: 700,
-                  }}
-                >
-                  {file}{rank}
-                </span>
-              )}
-            </button>
-          );
-        }),
-      )}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
+          gap: '2px',
+          width: 'min(430px, calc(100vw - 40px))',
+          aspectRatio: '1 / 1',
+          background: '#0f172a',
+          padding: '6px',
+          borderRadius: '12px',
+          boxSizing: 'border-box',
+          margin: '0 auto',
+          boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
+        }}
+      >
+        {board.map((row, rowIndex) =>
+          row.map((piece, colIndex) => {
+            const rank = 8 - rowIndex;
+            const file = FILES[colIndex];
+            const square = `${file}${rank}` as Square;
+            const isLight = (rowIndex + colIndex) % 2 === 0;
+            const isSelected = selectedSquare === square;
+
+            return (
+              <button
+                key={square}
+                onClick={() => handleSquareClick(square, piece)}
+                disabled={disabled || isFinished || !isMyTurn}
+                style={{
+                  border: isSelected ? '3px solid #22d3ee' : 'none',
+                  borderRadius: '6px',
+                  background: isLight ? '#fde68a' : '#86efac',
+                  color: '#111827',
+                  fontSize: 'clamp(24px, 6vw, 44px)',
+                  cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  userSelect: 'none',
+                  position: 'relative',
+                  width: '100%',
+                  aspectRatio: '1 / 1',
+                  minWidth: 0,
+                  minHeight: 0,
+                  padding: 0,
+                  boxSizing: 'border-box',
+                }}
+              >
+                {piece ? PIECES[piece.color][piece.type] : ''}
+                {(rank === 1 || file === 'a') && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      bottom: '2px',
+                      right: '4px',
+                      fontSize: '10px',
+                      color: 'rgba(15,23,42,0.65)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {file}{rank}
+                  </span>
+                )}
+              </button>
+            );
+          }),
+        )}
+      </div>
     </div>
   );
 }
