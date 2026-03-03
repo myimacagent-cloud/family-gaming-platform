@@ -25,7 +25,7 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
       alignItems: 'center', 
       gap: 12,
       width: '100%',
-      maxWidth: 'min(95vw, 600px)',
+      maxWidth: 'min(96vw, 520px)',
       margin: '0 auto',
       padding: '0 8px'
     }}>
@@ -53,8 +53,8 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
       <div style={{ 
         display: 'grid',
         gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
-        gap: 'clamp(2px, 1vw, 6px)',
-        padding: 'clamp(8px, 3vw, 16px)',
+        gap: 'clamp(1px, 0.5vw, 4px)',
+        padding: 'clamp(6px, 2vw, 12px)',
         borderRadius: 14,
         background: 'rgba(255,255,255,0.92)',
         boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
@@ -101,7 +101,6 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
                   borderRadius: 6,
                   background: taken ? '#6366f1' : '#cbd5e1',
                   cursor: !canPlay || taken ? 'default' : 'pointer',
-                  minHeight: 44, // Touch target size
                   padding: 0
                 }}
                 aria-label={`Horizontal edge ${edgeIdx}`}
@@ -128,7 +127,6 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
                   borderRadius: 6,
                   background: taken ? '#6366f1' : '#cbd5e1',
                   cursor: !canPlay || taken ? 'default' : 'pointer',
-                  minWidth: 44, // Touch target size
                   padding: 0
                 }}
                 aria-label={`Vertical edge ${edgeIdx}`}
