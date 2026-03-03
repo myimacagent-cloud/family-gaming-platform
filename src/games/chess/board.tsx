@@ -8,23 +8,22 @@ interface ChessBoardProps extends GameBoardProps<ChessState> {}
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
-const PIECES: Record<'w' | 'b', Record<PieceSymbol, string>> = {
-  w: {
-    k: 'K',
-    q: 'Q',
-    r: 'R',
-    b: 'B',
-    n: 'N',
-    p: 'P',
-  },
-  b: {
-    k: 'K',
-    q: 'Q',
-    r: 'R',
-    b: 'B',
-    n: 'N',
-    p: 'P',
-  },
+const PIECE_LABELS: Record<PieceSymbol, string> = {
+  k: 'K',
+  q: 'Q',
+  r: 'R',
+  b: 'B',
+  n: 'N',
+  p: 'P',
+};
+
+const PIECE_ICONS: Record<PieceSymbol, string> = {
+  k: '👑',
+  q: '✨',
+  r: '🏰',
+  b: '🧙',
+  n: '🐴',
+  p: '🛡️',
 };
 
 function colorFromPlayerSymbol(state: ChessState, mySymbol: string): 'w' | 'b' | null {
@@ -103,6 +102,14 @@ export function ChessBoard({
         {isFinished ? '🏁 Game over!' : isMyTurn ? '🌟 Your turn! Pick a piece, then tap where it should go.' : '⏳ Opponent\'s turn'}
       </div>
 
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 'min(430px, calc(100vw - 40px))' }}>
+        {(['k', 'q', 'r', 'b', 'n', 'p'] as PieceSymbol[]).map((t) => (
+          <span key={t} style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 999, padding: '4px 8px', fontSize: 13, fontWeight: 700, color: '#334155' }}>
+            {PIECE_ICONS[t]} {PIECE_LABELS[t]}
+          </span>
+        ))}
+      </div>
+
       <div
         style={{
           display: 'grid',
@@ -154,22 +161,25 @@ export function ChessBoard({
                 {piece ? (
                   <span
                     style={{
-                      width: '72%',
-                      height: '72%',
+                      width: '76%',
+                      height: '76%',
                       borderRadius: '999px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexDirection: 'column',
                       fontWeight: 900,
-                      fontSize: 'clamp(16px, 3.9vw, 30px)',
+                      fontSize: 'clamp(14px, 3.2vw, 22px)',
                       background: piece.color === 'w' ? '#ffffff' : '#0f172a',
                       color: piece.color === 'w' ? '#0f172a' : '#f8fafc',
                       border: piece.color === 'w' ? '2px solid #334155' : '2px solid #e2e8f0',
                       boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
                       lineHeight: 1,
+                      position: 'relative',
                     }}
                   >
-                    {PIECES[piece.color][piece.type]}
+                    <span style={{ fontSize: 'clamp(12px, 2.8vw, 18px)' }}>{PIECE_ICONS[piece.type]}</span>
+                    <span style={{ fontSize: 'clamp(10px, 2.3vw, 13px)', marginTop: 1 }}>{PIECE_LABELS[piece.type]}</span>
                   </span>
                 ) : ''}
                 {(rank === 1 || file === 'a') && (
