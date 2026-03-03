@@ -49,6 +49,7 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
 
   const p1 = state.players[0];
   const p2 = state.players[1];
+  const hasStarted = !!state.started?.[mySymbol];
 
   const makeMove = (index: number) => {
     if (!canPlay) return;
@@ -79,7 +80,9 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
 
       {!isFinished && (
         <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 10, padding: '8px 12px', fontWeight: 700, color: '#334155' }}>
-          {isMyTurn ? '🎨 Your turn — add a dot (4 dots = burst)!' : '⏳ Waiting for opponent...'}
+          {isMyTurn
+            ? (hasStarted ? '🎨 Your turn — play on your color only (4 dots = burst)!' : '🎨 Your first tap starts with 3 dots!')
+            : '⏳ Waiting for opponent...'}
         </div>
       )}
 
@@ -97,7 +100,9 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
       >
         {state.board.map((cell, i) => {
           const tokenColor = tokenColorFor(cell.owner);
-          const blockedByOpponent = !!cell.owner && cell.owner !== mySymbol;
+          const blockedByOpponent = hasStarted
+            ? cell.owner !== mySymbol
+            : cell.owner !== null;
           return (
             <button
               key={i}

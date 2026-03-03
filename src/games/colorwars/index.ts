@@ -23,6 +23,7 @@ function createInitialState(_roomCode: string): ColorWarsState {
     board: newBoard(ROWS, COLS),
     scores: {},
     moveCount: 0,
+    started: {},
   };
 }
 
@@ -37,6 +38,7 @@ function createRestartState(currentState: ColorWarsState): ColorWarsState {
     board: newBoard(currentState.rows, currentState.cols),
     scores,
     moveCount: 0,
+    started: {},
   };
 }
 
@@ -50,8 +52,15 @@ function validateMove(state: ColorWarsState, move: ColorWarsMove, playerSymbol: 
   if (move.index < 0 || move.index >= state.board.length) return { valid: false, error: 'Invalid cell' };
 
   const cell = state.board[move.index];
-  if (cell.owner && cell.owner !== playerSymbol) {
-    return { valid: false, error: 'You can only play on empty or your own cells' };
+  const hasStarted = !!state.started?.[playerSymbol];
+
+  if (!hasStarted) {
+    if (cell.owner !== null) return { valid: false, error: 'Your first move must be on an empty cell' };
+    return { valid: true };
+  }
+
+  if (cell.owner !== playerSymbol) {
+    return { valid: false, error: 'After your first move, you can only play on your own color' };
   }
 
   return { valid: true };
@@ -70,22 +79,32 @@ function neighbors(index: number, rows: number, cols: number): number[] {
 
 function applyMove(state: ColorWarsState, move: ColorWarsMove, playerSymbol: string): ColorWarsState {
   const board = state.board.map((c) => ({ ...c }));
+  const started: Record<string, boolean> = { ...(state.started || {}) };
+  const isFirstMoveForPlayer = !started[playerSymbol];
 
-  const queue: number[] = [move.index];
-  while (queue.length > 0) {
-    const idx = queue.shift()!;
-    const cell = board[idx];
-    cell.owner = playerSymbol;
-    cell.dots += 1;
+  if (isFirstMoveForPlayer) {
+    // First tile starts at 3 dots.
+    const firstCell = board[move.index];
+    firstCell.owner = playerSymbol;
+    firstCell.dots = Math.max(firstCell.dots, 3);
+    started[playerSymbol] = true;
+  } else {
+    const queue: number[] = [move.index];
+    while (queue.length > 0) {
+      const idx = queue.shift()!;
+      const cell = board[idx];
+      cell.owner = playerSymbol;
+      cell.dots += 1;
 
-    if (cell.dots >= CRITICAL_DOTS) {
-      cell.owner = null;
-      cell.dots = 0;
-      for (const n of neighbors(idx, state.rows, state.cols)) {
-        const neighbor = board[n];
-        neighbor.owner = playerSymbol;
-        neighbor.dots += 1;
-        if (neighbor.dots >= CRITICAL_DOTS) queue.push(n);
+      if (cell.dots >= CRITICAL_DOTS) {
+        cell.owner = null;
+        cell.dots = 0;
+        for (const n of neighbors(idx, state.rows, state.cols)) {
+          const neighbor = board[n];
+          neighbor.owner = playerSymbol;
+          neighbor.dots += 1;
+          if (neighbor.dots >= CRITICAL_DOTS) queue.push(n);
+        }
       }
     }
   }
@@ -96,24 +115,28 @@ function applyMove(state: ColorWarsState, move: ColorWarsMove, playerSymbol: str
   }
 
   const nextMoveCount = (state.moveCount || 0) + 1;
-  const [p1, p2] = state.players;
-  const s1 = p1 ? scores[p1.symbol] ?? 0 : 0;
-  const s2 = p2 ? scores[p2.symbol] ?? 0 : 0;
+  const startedPlayers = state.players.filter((p) => started[p.symbol]);
+  const playersWithZero = startedPlayers.filter((p) => (scores[p.symbol] ?? 0) === 0);
 
-  // Allow opening turns before elimination checks.
-  if (nextMoveCount >= 2 && p1 && p2) {
-    if (s1 === 0 && s2 > 0) {
-      return { ...state, board, scores, moveCount: nextMoveCount, status: 'finished', winner: p2.symbol };
-    }
-    if (s2 === 0 && s1 > 0) {
-      return { ...state, board, scores, moveCount: nextMoveCount, status: 'finished', winner: p1.symbol };
-    }
+  if (startedPlayers.length >= 2 && playersWithZero.length > 0) {
+    const loser = playersWithZero[0];
+    const winner = state.players.find((p) => p.symbol !== loser.symbol)?.symbol ?? null;
+    return {
+      ...state,
+      board,
+      scores,
+      started,
+      moveCount: nextMoveCount,
+      status: 'finished',
+      winner,
+    };
   }
 
   return {
     ...state,
     board,
     scores,
+    started,
     moveCount: nextMoveCount,
     currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,
   };
@@ -128,7 +151,7 @@ function checkGameEnd(state: ColorWarsState): { ended: boolean; winner: string |
 export const colorWarsGame: GameDefinition<ColorWarsState, ColorWarsMove> = {
   id: GAME_ID,
   displayName: 'Color Wars',
-  description: 'Tap to add dots. At 4 dots, the cell bursts into 4 nearby spots!',
+  description: 'First tap starts at 3 dots. After that, play only on your color. At 4 dots, tiles burst to neighbors!',
   minPlayers: 2,
   maxPlayers: 2,
   createInitialState,

@@ -12,6 +12,7 @@ export interface ColorWarsState extends BaseGameState {
   board: ColorWarsCell[];
   scores: Record<string, number>;
   moveCount: number;
+  started: Record<string, boolean>;
 }
 
 export interface ColorWarsMove {
