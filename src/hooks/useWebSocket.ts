@@ -39,7 +39,8 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
   const connect = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || `wss://family-gaming-platform.juniorcrockett23124-cmd.workers.dev/websocket?room=${roomCode}`;
+    const wsBase = import.meta.env.VITE_WS_URL || 'wss://family-gaming-platform.myimacagent.workers.dev';
+    const wsUrl = `${wsBase}/websocket?room=${roomCode}`;
     console.log(`[WS] Connecting to ${wsUrl} (attempt ${reconnectAttempts.current + 1})`);
     setConnectionState(reconnectAttempts.current > 0 ? 'reconnecting' : 'connecting');
     setError(null);
