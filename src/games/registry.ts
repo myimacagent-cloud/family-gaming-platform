@@ -5,6 +5,7 @@ import { hangmanGame } from './hangman';
 import { chessGameDefinition } from './chess';
 import { rockPaperScissorsGame } from './rockpaperscissors';
 import { dotsAndBoxesGame } from './dotsandboxes';
+import { colorWarsGame } from './colorwars';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -14,6 +15,7 @@ export const gameRegistry: GameRegistry = {
   [chessGameDefinition.id]: chessGameDefinition,
   [rockPaperScissorsGame.id]: rockPaperScissorsGame,
   [dotsAndBoxesGame.id]: dotsAndBoxesGame,
+  [colorWarsGame.id]: colorWarsGame,
 };
 
 // Helper functions
