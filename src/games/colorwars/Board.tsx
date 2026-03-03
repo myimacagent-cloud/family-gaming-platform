@@ -57,24 +57,24 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
   };
 
   const cellBgFor = (owner: string | null) => {
-    if (!owner) return '#e9d8bd';
-    if (owner === p1?.symbol) return '#d9f3fb';
-    if (owner === p2?.symbol) return '#ffd7df';
-    return '#e9d8bd';
+    if (!owner) return '#e2e8f0';
+    if (owner === p1?.symbol) return '#a5f3fc';
+    if (owner === p2?.symbol) return '#fbcfe8';
+    return '#c4b5fd';
   };
 
   const tokenColorFor = (owner: string | null) => {
     if (!owner) return null;
-    if (owner === p1?.symbol) return '#16b5e6';
-    if (owner === p2?.symbol) return '#ff5a6e';
+    if (owner === p1?.symbol) return '#22d3ee';
+    if (owner === p2?.symbol) return '#f472b6';
     return '#8b5cf6';
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
       <div style={{ display: 'flex', gap: 14, background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', fontWeight: 700 }}>
-        <span style={{ color: '#0891b2' }}>🔵 {p1?.displayName ?? 'P1'}: {state.scores[p1?.symbol ?? 'X'] ?? 0}</span>
-        <span style={{ color: '#e11d48' }}>🔴 {p2?.displayName ?? 'P2'}: {state.scores[p2?.symbol ?? 'O'] ?? 0}</span>
+        <span style={{ color: '#0891b2' }}>🩵 {p1?.displayName ?? 'P1'}: {state.scores[p1?.symbol ?? 'X'] ?? 0}</span>
+        <span style={{ color: '#db2777' }}>🩷 {p2?.displayName ?? 'P2'}: {state.scores[p2?.symbol ?? 'O'] ?? 0}</span>
       </div>
 
       {!isFinished && (
@@ -87,12 +87,12 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${state.cols}, 1fr)`,
-          gap: 10,
-          width: 'min(460px, calc(100vw - 32px))',
+          gap: 6,
+          width: 'min(420px, calc(100vw - 40px))',
           aspectRatio: '1 / 1',
-          background: '#eb8f73',
-          borderRadius: 18,
-          padding: 12,
+          background: 'rgba(15,23,42,0.95)',
+          borderRadius: 14,
+          padding: 10,
         }}
       >
         {state.board.map((cell, i) => {
@@ -105,7 +105,7 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
               disabled={!canPlay || blockedByOpponent}
               style={{
                 border: 'none',
-                borderRadius: 18,
+                borderRadius: 10,
                 background: cellBgFor(cell.owner),
                 cursor: !canPlay || blockedByOpponent ? 'default' : 'pointer',
                 display: 'flex',
