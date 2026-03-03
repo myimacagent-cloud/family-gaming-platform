@@ -152,24 +152,13 @@ export function ChessBoard({
                 {piece ? (
                   <span
                     style={{
-                      width: '76%',
-                      height: '76%',
-                      borderRadius: '999px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      flexDirection: 'column',
-                      fontWeight: 900,
-                      fontSize: 'clamp(14px, 3.2vw, 22px)',
-                      background: piece.color === 'w' ? '#ffffff' : '#0f172a',
-                      color: piece.color === 'w' ? '#0f172a' : '#f8fafc',
-                      border: piece.color === 'w' ? '2px solid #334155' : '2px solid #e2e8f0',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
                       lineHeight: 1,
-                      position: 'relative',
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(18px, 4.2vw, 28px)' }}>{PIECE_ICONS[piece.type]}</span>
+                    <span style={{ fontSize: 'clamp(20px, 4.8vw, 32px)' }}>{PIECE_ICONS[piece.type]}</span>
                   </span>
                 ) : ''}
                 {(rank === 1 || file === 'a') && (
