@@ -99,7 +99,7 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
                   alignSelf: 'center',
                   border: 'none',
                   borderRadius: 6,
-                  background: taken ? '#4338ca' : '#64748b',
+                  background: taken ? '#00e5ff' : '#64748b',
                   cursor: !canPlay || taken ? 'default' : 'pointer',
                   padding: 0
                 }}
@@ -125,7 +125,7 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
                   justifySelf: 'center',
                   border: 'none',
                   borderRadius: 6,
-                  background: taken ? '#4338ca' : '#64748b',
+                  background: taken ? '#00e5ff' : '#64748b',
                   cursor: !canPlay || taken ? 'default' : 'pointer',
                   padding: 0
                 }}
