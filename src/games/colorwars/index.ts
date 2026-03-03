@@ -3,8 +3,8 @@ import type { ColorWarsState, ColorWarsMove } from './types';
 import { ColorWarsBoard } from './Board';
 
 const GAME_ID = 'colorwars';
-const ROWS = 6;
-const COLS = 6;
+const ROWS = 7;
+const COLS = 7;
 
 function createInitialState(_roomCode: string): ColorWarsState {
   return {
