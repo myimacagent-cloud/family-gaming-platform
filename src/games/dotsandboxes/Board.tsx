@@ -99,7 +99,7 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
                   alignSelf: 'center',
                   border: 'none',
                   borderRadius: 6,
-                  background: taken ? '#6366f1' : '#cbd5e1',
+                  background: taken ? '#4338ca' : '#64748b',
                   cursor: !canPlay || taken ? 'default' : 'pointer',
                   padding: 0
                 }}
@@ -125,7 +125,7 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
                   justifySelf: 'center',
                   border: 'none',
                   borderRadius: 6,
-                  background: taken ? '#6366f1' : '#cbd5e1',
+                  background: taken ? '#4338ca' : '#64748b',
                   cursor: !canPlay || taken ? 'default' : 'pointer',
                   padding: 0
                 }}
@@ -151,10 +151,11 @@ export function DotsAndBoxesBoard({ state, mySymbol, onMove, disabled }: DotsAnd
                 justifyContent: 'center', 
                 fontWeight: 800, 
                 borderRadius: 6,
+                border: '1px solid rgba(71, 85, 105, 0.35)',
                 background: owner 
-                  ? (isP1 ? 'rgba(99,102,241,0.25)' : 'rgba(139,92,246,0.25)')
-                  : 'rgba(148,163,184,0.10)',
-                color: isP1 ? '#4338ca' : '#6d28d9',
+                  ? (isP1 ? 'rgba(99,102,241,0.45)' : 'rgba(139,92,246,0.45)')
+                  : 'rgba(226,232,240,0.8)',
+                color: isP1 ? '#312e81' : '#581c87',
                 fontSize: 'clamp(10px, 3vw, 16px)',
                 width: '100%',
                 aspectRatio: '1'
