@@ -158,7 +158,7 @@ export function ChessBoard({
                       lineHeight: 1,
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(20px, 4.8vw, 32px)' }}>{PIECE_ICONS[piece.type]}</span>
+                    <span style={{ fontSize: 'clamp(24px, 5.8vw, 40px)' }}>{PIECE_ICONS[piece.type]}</span>
                   </span>
                 ) : ''}
                 {(rank === 1 || file === 'a') && (
