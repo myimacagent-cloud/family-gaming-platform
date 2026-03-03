@@ -10,20 +10,20 @@ const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
 const PIECES: Record<'w' | 'b', Record<PieceSymbol, string>> = {
   w: {
-    k: '♔',
-    q: '♕',
-    r: '♖',
-    b: '♗',
-    n: '♘',
-    p: '♙',
+    k: 'K',
+    q: 'Q',
+    r: 'R',
+    b: 'B',
+    n: 'N',
+    p: 'P',
   },
   b: {
-    k: '♚',
-    q: '♛',
-    r: '♜',
-    b: '♝',
-    n: '♞',
-    p: '♟',
+    k: 'K',
+    q: 'Q',
+    r: 'R',
+    b: 'B',
+    n: 'N',
+    p: 'P',
   },
 };
 
@@ -151,7 +151,27 @@ export function ChessBoard({
                   boxSizing: 'border-box',
                 }}
               >
-                {piece ? PIECES[piece.color][piece.type] : ''}
+                {piece ? (
+                  <span
+                    style={{
+                      width: '72%',
+                      height: '72%',
+                      borderRadius: '999px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900,
+                      fontSize: 'clamp(16px, 3.9vw, 30px)',
+                      background: piece.color === 'w' ? '#ffffff' : '#0f172a',
+                      color: piece.color === 'w' ? '#0f172a' : '#f8fafc',
+                      border: piece.color === 'w' ? '2px solid #334155' : '2px solid #e2e8f0',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {PIECES[piece.color][piece.type]}
+                  </span>
+                ) : ''}
                 {(rank === 1 || file === 'a') && (
                   <span
                     style={{
