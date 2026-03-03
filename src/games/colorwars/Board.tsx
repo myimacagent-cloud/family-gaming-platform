@@ -4,6 +4,7 @@ import type { ColorWarsState, ColorWarsMove } from './types';
 interface ColorWarsBoardProps extends GameBoardProps<ColorWarsState> {}
 
 function Token({ color, dots }: { color: string; dots: number }) {
+  const dotColor = color === '#ffffff' ? '#111827' : '#ffffff';
   const patterns: Record<number, Array<{ top: string; left: string }>> = {
     1: [{ top: '50%', left: '50%' }],
     2: [{ top: '42%', left: '35%' }, { top: '58%', left: '65%' }],
@@ -31,7 +32,7 @@ function Token({ color, dots }: { color: string; dots: number }) {
             width: '16%',
             height: '16%',
             borderRadius: '50%',
-            background: '#fff',
+            background: dotColor,
             top: dot.top,
             left: dot.left,
             transform: 'translate(-50%, -50%)',
@@ -49,6 +50,8 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
 
   const p1 = state.players[0];
   const p2 = state.players[1];
+  const me = state.players.find((p) => p.symbol === mySymbol);
+  const opponent = state.players.find((p) => p.symbol !== mySymbol);
   const hasStarted = !!state.started?.[mySymbol];
 
   const makeMove = (index: number) => {
@@ -58,24 +61,38 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
   };
 
   const cellBgFor = (owner: string | null) => {
-    if (!owner) return '#e2e8f0';
-    if (owner === p1?.symbol) return '#a5f3fc';
-    if (owner === p2?.symbol) return '#fbcfe8';
-    return '#c4b5fd';
+    if (!owner) return '#f3f4f6';
+    if (owner === p1?.symbol) return '#d1d5db';
+    if (owner === p2?.symbol) return '#9ca3af';
+    return '#e5e7eb';
   };
 
   const tokenColorFor = (owner: string | null) => {
     if (!owner) return null;
-    if (owner === p1?.symbol) return '#22d3ee';
-    if (owner === p2?.symbol) return '#f472b6';
-    return '#8b5cf6';
+    if (owner === p1?.symbol) return '#ffffff';
+    if (owner === p2?.symbol) return '#111827';
+    return '#6b7280';
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-      <div style={{ display: 'flex', gap: 14, background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', fontWeight: 700 }}>
-        <span style={{ color: '#0891b2' }}>🩵 {p1?.displayName ?? 'P1'}: {state.scores[p1?.symbol ?? 'X'] ?? 0}</span>
-        <span style={{ color: '#db2777' }}>🩷 {p2?.displayName ?? 'P2'}: {state.scores[p2?.symbol ?? 'O'] ?? 0}</span>
+      <div style={{ display: 'flex', gap: 10, background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 12px', fontWeight: 700, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <span style={{ color: '#111827', background: '#ffffff', border: '2px solid #111827', borderRadius: 999, padding: '4px 10px' }}>
+          ⚪ {p1?.displayName ?? 'P1'}: {state.scores[p1?.symbol ?? 'X'] ?? 0}
+        </span>
+        <span style={{ color: '#ffffff', background: '#111827', border: '2px solid #111827', borderRadius: 999, padding: '4px 10px' }}>
+          ⚫ {p2?.displayName ?? 'P2'}: {state.scores[p2?.symbol ?? 'O'] ?? 0}
+        </span>
+        {me && (
+          <span style={{ color: '#1f2937', background: '#e5e7eb', borderRadius: 999, padding: '4px 10px' }}>
+            You: {me.displayName}
+          </span>
+        )}
+        {opponent && (
+          <span style={{ color: '#1f2937', background: '#e5e7eb', borderRadius: 999, padding: '4px 10px' }}>
+            Opponent: {opponent.displayName}
+          </span>
+        )}
       </div>
 
       {!isFinished && (
@@ -93,7 +110,7 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
           gap: 6,
           width: 'min(420px, calc(100vw - 40px))',
           aspectRatio: '1 / 1',
-          background: 'rgba(15,23,42,0.95)',
+          background: '#000000',
           borderRadius: 14,
           padding: 10,
         }}
@@ -109,7 +126,7 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
               onClick={() => makeMove(i)}
               disabled={!canPlay || blockedByOpponent}
               style={{
-                border: 'none',
+                border: '1px solid #111827',
                 borderRadius: 10,
                 background: cellBgFor(cell.owner),
                 cursor: !canPlay || blockedByOpponent ? 'default' : 'pointer',
