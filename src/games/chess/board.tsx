@@ -8,15 +8,6 @@ interface ChessBoardProps extends GameBoardProps<ChessState> {}
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
-const PIECE_LABELS: Record<PieceSymbol, string> = {
-  k: 'K',
-  q: 'Q',
-  r: 'R',
-  b: 'B',
-  n: 'N',
-  p: 'P',
-};
-
 const PIECE_ICONS: Record<PieceSymbol, string> = {
   k: '👑',
   q: '✨',
@@ -104,8 +95,8 @@ export function ChessBoard({
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 'min(430px, calc(100vw - 40px))' }}>
         {(['k', 'q', 'r', 'b', 'n', 'p'] as PieceSymbol[]).map((t) => (
-          <span key={t} style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 999, padding: '4px 8px', fontSize: 13, fontWeight: 700, color: '#334155' }}>
-            {PIECE_ICONS[t]} {PIECE_LABELS[t]}
+          <span key={t} style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 999, padding: '4px 8px', fontSize: 18, fontWeight: 700, color: '#334155' }}>
+            {PIECE_ICONS[t]}
           </span>
         ))}
       </div>
@@ -178,8 +169,7 @@ export function ChessBoard({
                       position: 'relative',
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(12px, 2.8vw, 18px)' }}>{PIECE_ICONS[piece.type]}</span>
-                    <span style={{ fontSize: 'clamp(10px, 2.3vw, 13px)', marginTop: 1 }}>{PIECE_LABELS[piece.type]}</span>
+                    <span style={{ fontSize: 'clamp(18px, 4.2vw, 28px)' }}>{PIECE_ICONS[piece.type]}</span>
                   </span>
                 ) : ''}
                 {(rank === 1 || file === 'a') && (
