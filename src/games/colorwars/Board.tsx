@@ -3,12 +3,19 @@ import type { ColorWarsState, ColorWarsMove } from './types';
 
 interface ColorWarsBoardProps extends GameBoardProps<ColorWarsState> {}
 
-function Token({ color }: { color: string }) {
+function Token({ color, dots }: { color: string; dots: number }) {
+  const patterns: Record<number, Array<{ top: string; left: string }>> = {
+    1: [{ top: '50%', left: '50%' }],
+    2: [{ top: '42%', left: '35%' }, { top: '58%', left: '65%' }],
+    3: [{ top: '28%', left: '50%' }, { top: '62%', left: '34%' }, { top: '62%', left: '66%' }],
+  };
+  const points = patterns[Math.min(3, Math.max(1, dots))] || patterns[1];
+
   return (
     <span
       style={{
-        width: '70%',
-        height: '70%',
+        width: '72%',
+        height: '72%',
         borderRadius: '999px',
         background: color,
         position: 'relative',
@@ -16,11 +23,7 @@ function Token({ color }: { color: string }) {
         boxShadow: '0 4px 10px rgba(15,23,42,0.2)',
       }}
     >
-      {[
-        { top: '26%', left: '50%' },
-        { top: '58%', left: '34%' },
-        { top: '58%', left: '66%' },
-      ].map((dot, idx) => (
+      {points.map((dot, idx) => (
         <span
           key={idx}
           style={{
@@ -53,17 +56,17 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
     onMove(move);
   };
 
-  const cellBgFor = (symbol: string | null) => {
-    if (!symbol) return '#e9d8bd';
-    if (symbol === p1?.symbol) return '#d9f3fb';
-    if (symbol === p2?.symbol) return '#ffd7df';
+  const cellBgFor = (owner: string | null) => {
+    if (!owner) return '#e9d8bd';
+    if (owner === p1?.symbol) return '#d9f3fb';
+    if (owner === p2?.symbol) return '#ffd7df';
     return '#e9d8bd';
   };
 
-  const tokenColorFor = (symbol: string | null) => {
-    if (!symbol) return null;
-    if (symbol === p1?.symbol) return '#16b5e6';
-    if (symbol === p2?.symbol) return '#ff5a6e';
+  const tokenColorFor = (owner: string | null) => {
+    if (!owner) return null;
+    if (owner === p1?.symbol) return '#16b5e6';
+    if (owner === p2?.symbol) return '#ff5a6e';
     return '#8b5cf6';
   };
 
@@ -76,7 +79,7 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
 
       {!isFinished && (
         <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 10, padding: '8px 12px', fontWeight: 700, color: '#334155' }}>
-          {isMyTurn ? '🎨 Your turn — claim a square!' : '⏳ Waiting for opponent...'}
+          {isMyTurn ? '🎨 Your turn — add a dot (4 dots = burst)!' : '⏳ Waiting for opponent...'}
         </div>
       )}
 
@@ -93,17 +96,18 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
         }}
       >
         {state.board.map((cell, i) => {
-          const tokenColor = tokenColorFor(cell);
+          const tokenColor = tokenColorFor(cell.owner);
+          const blockedByOpponent = !!cell.owner && cell.owner !== mySymbol;
           return (
             <button
               key={i}
               onClick={() => makeMove(i)}
-              disabled={!canPlay || cell !== null}
+              disabled={!canPlay || blockedByOpponent}
               style={{
                 border: 'none',
                 borderRadius: 18,
-                background: cellBgFor(cell),
-                cursor: !canPlay || cell !== null ? 'default' : 'pointer',
+                background: cellBgFor(cell.owner),
+                cursor: !canPlay || blockedByOpponent ? 'default' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -111,7 +115,7 @@ export function ColorWarsBoard({ state, mySymbol, onMove, disabled }: ColorWarsB
               }}
               aria-label={`Cell ${i + 1}`}
             >
-              {tokenColor ? <Token color={tokenColor} /> : null}
+              {tokenColor && cell.dots > 0 ? <Token color={tokenColor} dots={cell.dots} /> : null}
             </button>
           );
         })}
