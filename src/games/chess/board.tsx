@@ -23,12 +23,7 @@ function colorFromPlayerSymbol(state: ChessState, mySymbol: string): 'w' | 'b' |
   return null;
 }
 
-export function ChessBoard({
-  state,
-  mySymbol,
-  onMove,
-  disabled,
-}: ChessBoardProps) {
+export function ChessBoard({ state, mySymbol, onMove, disabled }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const chess = useMemo(() => new Chess(state.fen), [state.fen]);
   const board = chess.board();
@@ -79,33 +74,86 @@ export function ChessBoard({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-      {/* Player Identity */}
+      {/* Player Identity - P1 and P2 clearly different */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 4 }}>
-        <span style={{ color: '#111827', background: '#ffffff', border: '2px solid #111827', borderRadius: 999, padding: '4px 10px', fontWeight: 700 }}>
-          ⚪ {p1?.displayName ?? 'P1'}
+        <span style={{
+          color: '#000000',
+          background: '#ffffff',
+          border: '3px solid #22d3ee',
+          borderRadius: 999,
+          padding: '6px 12px',
+          fontWeight: 800,
+          fontSize: '16px'
+        }}>
+          ⚪ P1 (White): {p1?.displayName ?? 'Player 1'}
         </span>
-        <span style={{ color: '#ffffff', background: '#111827', border: '2px solid #111827', borderRadius: 999, padding: '4px 10px', fontWeight: 700 }}>
-          ⚫ {p2?.displayName ?? 'P2'}
+        <span style={{
+          color: '#ffffff',
+          background: '#000000',
+          border: '3px solid #f472b6',
+          borderRadius: 999,
+          padding: '6px 12px',
+          fontWeight: 800,
+          fontSize: '16px'
+        }}>
+          ⚫ P2 (Black): {p2?.displayName ?? 'Player 2'}
         </span>
+      </div>
+
+      {/* You/Opponent labels */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
         {me && (
-          <span style={{ color: '#1f2937', background: '#e5e7eb', borderRadius: 999, padding: '4px 10px', fontWeight: 700 }}>
-            You: {me.displayName}
+          <span style={{
+            color: myColor === 'w' ? '#0891b2' : '#db2777',
+            background: '#f3f4f6',
+            borderRadius: 999,
+            padding: '4px 10px',
+            fontWeight: 700,
+            fontSize: '14px'
+          }}>
+            👤 You: {me.displayName} ({myColor === 'w' ? 'White' : 'Black'})
           </span>
         )}
         {opponent && (
-          <span style={{ color: '#1f2937', background: '#e5e7eb', borderRadius: 999, padding: '4px 10px', fontWeight: 700 }}>
-            Opponent: {opponent.displayName}
+          <span style={{
+            color: '#6b7280',
+            background: '#f3f4f6',
+            borderRadius: 999,
+            padding: '4px 10px',
+            fontWeight: 700,
+            fontSize: '14px'
+          }}>
+            👤 Opponent: {opponent.displayName}
           </span>
         )}
       </div>
 
       {/* Turn indicator */}
-      <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: '8px 12px', fontWeight: 700, color: '#334155', textAlign: 'center', }} >
-        {isFinished ? '🏁 Game over!' : isMyTurn ? '🌟 Your turn! Pick a piece, then tap where it should go.' : '⏳ Opponent\'s turn'}
+      <div style={{
+        background: 'rgba(255,255,255,0.92)',
+        borderRadius: 12,
+        padding: '8px 12px',
+        fontWeight: 700,
+        color: '#334155',
+        textAlign: 'center',
+      }}>
+        {isFinished ? '🏁 Game over!' : isMyTurn ? '🌟 Your turn!' : '⏳ Opponent\'s turn'}
       </div>
 
-      {/* Chess Board - Black and White */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 1fr))', gap: '1px', width: 'min(430px, calc(100vw - 40px))', aspectRatio: '1 / 1', background: '#111827', padding: '4px', borderRadius: '8px', boxSizing: 'border-box', margin: '0 auto', boxShadow: '0 10px 24px rgba(0,0,0,0.22)', }} >
+      {/* Chess Board - Pure Black and White */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
+        gap: '1px',
+        width: 'min(430px, calc(100vw - 40px))',
+        aspectRatio: '1 / 1',
+        background: '#000000',
+        padding: '4px',
+        borderRadius: '8px',
+        boxSizing: 'border-box',
+        margin: '0 auto',
+        boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
+      }}>
         {board.map((row, rowIndex) =>
           row.map((piece, colIndex) => {
             const rank = 8 - rowIndex;
@@ -114,20 +162,15 @@ export function ChessBoard({
             const isLight = (rowIndex + colIndex) % 2 === 0;
             const isSelected = selectedSquare === square;
 
-            // Show piece as either white or black based on its color
-            const pieceBg = piece?.color === 'w' ? '#e5e5e5' : '#1f2937';
-
             return (
               <button
                 key={square}
                 onClick={() => handleSquareClick(square, piece)}
                 disabled={disabled || isFinished || !isMyTurn}
                 style={{
-                  border: isSelected ? '3px solid #22d3ee' : '1px solid #374151',
+                  border: isSelected ? '3px solid #22d3ee' : '1px solid #333333',
                   borderRadius: '4px',
-                  background: isLight ? '#f9fafb' : '#d1d5db',
-                  color: '#111827',
-                  fontSize: 'clamp(28px, 7vw, 48px)',
+                  background: isLight ? '#ffffff' : '#000000',
                   cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -147,29 +190,37 @@ export function ChessBoard({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '80%',
-                    height: '80%',
+                    width: '85%',
+                    height: '85%',
                     borderRadius: '50%',
-                    background: pieceBg,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    background: piece.color === 'w' ? '#ffffff' : '#111827',
+                    border: piece.color === 'w' ? '3px solid #22d3ee' : '3px solid #f472b6',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
                   }}>
-                    <span style={{ fontSize: 'clamp(20px, 5vw, 38px)' }}>
-                      <span style={{ filter: piece?.color === 'w' ? 'none' : 'drop-shadow(0 1px 2px rgba(255,255,255,0.3))' }}>
-                        {PIECE_ICONS[piece.type]}
-                      </span>
+                    <span style={{
+                      fontSize: 'clamp(22px, 5.5vw, 40px)',
+                      color: piece.color === 'w' ? '#000000' : '#ffffff',
+                      fontWeight: 700,
+                    }}>
+                      {PIECE_ICONS[piece.type]}
                     </span>
                   </span>
-                ) : (
-                  ''
-                )}
+                ) : ''}
                 {(rank === 1 || file === 'a') && (
-                  <span style={{ position: 'absolute', bottom: '2px', right: '4px', fontSize: '10px', color: isLight ? '#374151' : '#9ca3af', fontWeight: 700, }} >
+                  <span style={{
+                    position: 'absolute',
+                    bottom: '2px',
+                    right: '4px',
+                    fontSize: '10px',
+                    color: isLight ? '#000000' : '#ffffff',
+                    fontWeight: 700,
+                  }}>
                     {file}{rank}
                   </span>
                 )}
               </button>
             );
-          }),
+          })
         )}
       </div>
     </div>
