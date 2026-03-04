@@ -7,13 +7,11 @@ import type { ChessState, ChessMove } from './logic';
 interface ChessBoardProps extends GameBoardProps<ChessState> {}
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
-const PIECE_ICONS: Record<PieceSymbol, string> = {
-  k: '♔',
-  q: '♛',
-  r: '♜',
-  b: '♝',
-  n: '♞',
-  p: '♟',
+const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'] as const;
+
+const CHESS_PIECES: Record<Color, Record<PieceSymbol, string>> = {
+  w: { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' },
+  b: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' },
 };
 
 function colorFromPlayerSymbol(state: ChessState, mySymbol: string): 'w' | 'b' | null {
@@ -27,7 +25,7 @@ export function ChessBoard({
   state,
   mySymbol,
   onMove,
-  disabled,
+  disabled
 }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const chess = useMemo(() => new Chess(state.fen), [state.fen]);
@@ -73,72 +71,144 @@ export function ChessBoard({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-      {/* Turn indicator */}
-      <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: '8px 12px', fontWeight: 700, color: '#334155', textAlign: 'center', }} >
-        {isFinished ? '🏁 Game over!' : isMyTurn ? '🌟 Your turn! Pick a piece, then tap where it should go.' : '⏳ Opponent\'s turn'}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+      <div style={{ 
+        background: 'rgba(255,255,255,0.95)', 
+        border: '2px solid #111827', 
+        borderRadius: 8, 
+        padding: '10px 16px', 
+        fontWeight: 800, 
+        color: '#111827',
+        textAlign: 'center',
+        fontSize: '16px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        {isFinished ? '🏁 Game Over!' : isMyTurn ? '🎯 Your Turn' : '⏳ Waiting for Opponent'}
       </div>
 
-      {/* Piece Legend */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 'min(430px, calc(100vw - 40px))' }}>
-        {(['k', 'q', 'r', 'b', 'n', 'p'] as PieceSymbol[]).map((t) => (
-          <span key={t} style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 999, padding: '4px 8px', fontSize: 18, fontWeight: 700, color: '#334155' }}>
-            {PIECE_ICONS[t]}
-          </span>
-        ))}
-      </div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#111827',
+        padding: '24px 24px 24px 32px',
+        borderRadius: 12,
+        boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+        position: 'relative',
+      }}>
+        <div style={{ display: 'flex', marginLeft: 24 }}>
+          {FILES.map((f) => (
+            <div key={`top-${f}`} style={{ 
+              width: 'min(50px, calc((100vw - 100px) / 8))', 
+              textAlign: 'center', 
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: 14,
+              paddingBottom: 4
+            }}>
+              {f.toUpperCase()}
+            </div>
+          ))}
+        </div>
 
-      {/* Chess Board */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 1fr))', gap: '2px', width: 'min(430px, calc(100vw - 40px))', aspectRatio: '1 / 1', background: '#0f172a', padding: '6px', borderRadius: '12px', boxSizing: 'border-box', margin: '0 auto', boxShadow: '0 10px 24px rgba(0,0,0,0.22)', }} >
-        {board.map((row, rowIndex) =>
-          row.map((piece, colIndex) => {
-            const rank = 8 - rowIndex;
-            const file = FILES[colIndex];
-            const square = `${file}${rank}` as Square;
-            const isLight = (rowIndex + colIndex) % 2 === 0;
-            const isSelected = selectedSquare === square;
+        <div style={{ display: 'flex' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', marginRight: 4 }}>
+            {RANKS.map((r) => (
+              <div key={`left-${r}`} style={{ 
+                height: 'min(50px, calc((100vw - 100px) / 8))', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: 14
+              }}>
+                {r}
+              </div>
+            ))}
+          </div>
 
-            return (
-              <button
-                key={square}
-                onClick={() => handleSquareClick(square, piece)}
-                disabled={disabled || isFinished || !isMyTurn}
-                style={{
-                  border: isSelected ? '2px solid #37cef4' : 'none',
-                  borderRadius: '6px',
-                  background: isLight ? '#fde68a' : '#86efac',
-                  color: '#111827',
-                  fontSize: 'clamp(24px, 6vw, 44px)',
-                  cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  userSelect: 'none',
-                  position: 'relative',
-                  width: '100%',
-                  aspectRatio: '1 / 1',
-                  minWidth: 0,
-                  minHeight: 0,
-                  padding: 0,
-                  boxSizing: 'border-box',
-                }}
-              >
-                {piece ? (
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
-                    <span style={{ fontSize: 'clamp(28px, 6.8vw, 46px)' }}>
-                      {PIECE_ICONS[piece.type]}
-                    </span>
-                  </span>
-                ) : ''}
-                {(rank === 1 || file === 'a') && (
-                  <span style={{ position: 'absolute', bottom: '2px', right: '4px', fontSize: '10px', color: 'rgba(15,23,42,0.65)', fontWeight: 700, }} >
-                    {file}{rank}
-                  </span>
-                )}
-              </button>
-            );
-          }),
-        )}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(8, 1fr)',
+            border: '3px solid #374151',
+            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)'
+          }}>
+            {board.map((row, rowIndex) =>
+              row.map((piece, colIndex) => {
+                const rank = RANKS[rowIndex];
+                const file = FILES[colIndex];
+                const square = `${file}${rank}` as Square;
+                const isLight = (rowIndex + colIndex) % 2 === 0;
+                const isSelected = selectedSquare === square;
+
+                const lightSquare = '#FFFFFF';
+                const darkSquare = '#000000';
+                const bgColor = isSelected ? '#22d3ee' : (isLight ? lightSquare : darkSquare);
+
+                return (
+                  <button
+                    key={square}
+                    onClick={() => handleSquareClick(square, piece)}
+                    disabled={disabled || isFinished || !isMyTurn}
+                    style={{
+                      width: 'min(50px, calc((100vw - 100px) / 8))',
+                      aspectRatio: '1 / 1',
+                      background: bgColor,
+                      border: isSelected ? '3px solid #0891b2' : 'none',
+                      cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 'clamp(32px, 6.5vw, 44px)',
+                      padding: 0,
+                    }}
+                  >
+                    {piece ? (
+                      <span style={{
+                        filter: piece.color === 'b' 
+                          ? 'drop-shadow(0.5px 0.5px 0.5px rgba(255,255,255,0.4))' 
+                          : 'drop-shadow(0.5px 0.5px 0.5px rgba(0,0,0,0.4))',
+                      }}>
+                        {CHESS_PIECES[piece.color][piece.type]}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 8 }}>
+            {RANKS.map((r) => (
+              <div key={`right-${r}`} style={{ 
+                height: 'min(50px, calc((100vw - 100px) / 8))', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: 14
+              }}>
+                {r}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', marginLeft: 24 }}>
+          {FILES.map((f) => (
+            <div key={`bottom-${f}`} style={{ 
+              width: 'min(50px, calc((100vw - 100px) / 8))', 
+              textAlign: 'center', 
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: 14,
+              paddingTop: 4
+            }}>
+              {f.toUpperCase()}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
