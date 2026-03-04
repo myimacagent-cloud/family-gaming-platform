@@ -187,23 +187,17 @@ export function ChessBoard({ state, mySymbol, onMove, disabled }: ChessBoardProp
               >
                 {piece ? (
                   <span style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '85%',
-                    height: '85%',
-                    borderRadius: '50%',
-                    background: piece.color === 'w' ? '#ffffff' : '#111827',
-                    border: piece.color === 'w' ? '3px solid #22d3ee' : '3px solid #f472b6',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                    fontSize: 'clamp(28px, 7vw, 46px)',
+                    color: piece.color === 'w' ? '#000000' : '#ffffff',
+                    fontWeight: 700,
+                    textShadow: piece.color === 'w'
+                      ? 'none'
+                      : '0 0 2px #000000, 0 0 4px #000000, 0 0 6px #000000',
+                    filter: piece.color === 'w'
+                      ? 'drop-shadow(0 0 1px #000000)'
+                      : 'drop-shadow(0 0 2px #ffffff)',
                   }}>
-                    <span style={{
-                      fontSize: 'clamp(22px, 5.5vw, 40px)',
-                      color: piece.color === 'w' ? '#000000' : '#ffffff',
-                      fontWeight: 700,
-                    }}>
-                      {PIECE_ICONS[piece.type]}
-                    </span>
+                    {PIECE_ICONS[piece.type]}
                   </span>
                 ) : ''}
                 {(rank === 1 || file === 'a') && (
