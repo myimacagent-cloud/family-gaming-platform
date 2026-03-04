@@ -23,18 +23,18 @@ function colorFromPlayerSymbol(state: ChessState, mySymbol: string): 'w' | 'b' |
   return null;
 }
 
-export function ChessBoard({ state, mySymbol, onMove, disabled }: ChessBoardProps) {
+export function ChessBoard({
+  state,
+  mySymbol,
+  onMove,
+  disabled,
+}: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const chess = useMemo(() => new Chess(state.fen), [state.fen]);
   const board = chess.board();
   const myColor = colorFromPlayerSymbol(state, mySymbol);
   const isMyTurn = myColor !== null && chess.turn() === myColor;
   const isFinished = state.status === 'finished';
-
-  const p1 = state.players[0];
-  const p2 = state.players[1];
-  const me = state.players.find((p) => p.symbol === mySymbol);
-  const opponent = state.players.find((p) => p.symbol !== mySymbol);
 
   const handleSquareClick = (
     square: Square,
@@ -74,86 +74,22 @@ export function ChessBoard({ state, mySymbol, onMove, disabled }: ChessBoardProp
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-      {/* Player Identity - P1 and P2 clearly different */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 4 }}>
-        <span style={{
-          color: '#000000',
-          background: '#ffffff',
-          border: '3px solid #22d3ee',
-          borderRadius: 999,
-          padding: '6px 12px',
-          fontWeight: 800,
-          fontSize: '16px'
-        }}>
-          ⚪ P1 (White): {p1?.displayName ?? 'Player 1'}
-        </span>
-        <span style={{
-          color: '#ffffff',
-          background: '#000000',
-          border: '3px solid #f472b6',
-          borderRadius: 999,
-          padding: '6px 12px',
-          fontWeight: 800,
-          fontSize: '16px'
-        }}>
-          ⚫ P2 (Black): {p2?.displayName ?? 'Player 2'}
-        </span>
-      </div>
-
-      {/* You/Opponent labels */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-        {me && (
-          <span style={{
-            color: myColor === 'w' ? '#0891b2' : '#db2777',
-            background: '#f3f4f6',
-            borderRadius: 999,
-            padding: '4px 10px',
-            fontWeight: 700,
-            fontSize: '14px'
-          }}>
-            👤 You: {me.displayName} ({myColor === 'w' ? 'White' : 'Black'})
-          </span>
-        )}
-        {opponent && (
-          <span style={{
-            color: '#6b7280',
-            background: '#f3f4f6',
-            borderRadius: 999,
-            padding: '4px 10px',
-            fontWeight: 700,
-            fontSize: '14px'
-          }}>
-            👤 Opponent: {opponent.displayName}
-          </span>
-        )}
-      </div>
-
       {/* Turn indicator */}
-      <div style={{
-        background: 'rgba(255,255,255,0.92)',
-        borderRadius: 12,
-        padding: '8px 12px',
-        fontWeight: 700,
-        color: '#334155',
-        textAlign: 'center',
-      }}>
-        {isFinished ? '🏁 Game over!' : isMyTurn ? '🌟 Your turn!' : '⏳ Opponent\'s turn'}
+      <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: '8px 12px', fontWeight: 700, color: '#334155', textAlign: 'center', }} >
+        {isFinished ? '🏁 Game over!' : isMyTurn ? '🌟 Your turn! Pick a piece, then tap where it should go.' : '⏳ Opponent\'s turn'}
       </div>
 
-      {/* Chess Board - Pure Black and White */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
-        gap: '1px',
-        width: 'min(430px, calc(100vw - 40px))',
-        aspectRatio: '1 / 1',
-        background: '#000000',
-        padding: '4px',
-        borderRadius: '8px',
-        boxSizing: 'border-box',
-        margin: '0 auto',
-        boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
-      }}>
+      {/* Piece Legend */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 'min(430px, calc(100vw - 40px))' }}>
+        {(['k', 'q', 'r', 'b', 'n', 'p'] as PieceSymbol[]).map((t) => (
+          <span key={t} style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 999, padding: '4px 8px', fontSize: 18, fontWeight: 700, color: '#334155' }}>
+            {PIECE_ICONS[t]}
+          </span>
+        ))}
+      </div>
+
+      {/* Chess Board */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 1fr))', gap: '2px', width: 'min(430px, calc(100vw - 40px))', aspectRatio: '1 / 1', background: '#0f172a', padding: '6px', borderRadius: '12px', boxSizing: 'border-box', margin: '0 auto', boxShadow: '0 10px 24px rgba(0,0,0,0.22)', }} >
         {board.map((row, rowIndex) =>
           row.map((piece, colIndex) => {
             const rank = 8 - rowIndex;
@@ -168,9 +104,11 @@ export function ChessBoard({ state, mySymbol, onMove, disabled }: ChessBoardProp
                 onClick={() => handleSquareClick(square, piece)}
                 disabled={disabled || isFinished || !isMyTurn}
                 style={{
-                  border: isSelected ? '3px solid #22d3ee' : '1px solid #333333',
-                  borderRadius: '4px',
-                  background: isLight ? '#ffffff' : '#000000',
+                  border: isSelected ? '2px solid #37cef4' : 'none',
+                  borderRadius: '6px',
+                  background: isLight ? '#fde68a' : '#86efac',
+                  color: '#111827',
+                  fontSize: 'clamp(24px, 6vw, 44px)',
                   cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -186,35 +124,20 @@ export function ChessBoard({ state, mySymbol, onMove, disabled }: ChessBoardProp
                 }}
               >
                 {piece ? (
-                  <span style={{
-                    fontSize: 'clamp(28px, 7vw, 46px)',
-                    color: piece.color === 'w' ? '#000000' : '#ffffff',
-                    fontWeight: 700,
-                    textShadow: piece.color === 'w'
-                      ? 'none'
-                      : '0 0 2px #000000, 0 0 4px #000000, 0 0 6px #000000',
-                    filter: piece.color === 'w'
-                      ? 'drop-shadow(0 0 1px #000000)'
-                      : 'drop-shadow(0 0 2px #ffffff)',
-                  }}>
-                    {PIECE_ICONS[piece.type]}
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                    <span style={{ fontSize: 'clamp(28px, 6.8vw, 46px)' }}>
+                      {PIECE_ICONS[piece.type]}
+                    </span>
                   </span>
                 ) : ''}
                 {(rank === 1 || file === 'a') && (
-                  <span style={{
-                    position: 'absolute',
-                    bottom: '2px',
-                    right: '4px',
-                    fontSize: '10px',
-                    color: isLight ? '#000000' : '#ffffff',
-                    fontWeight: 700,
-                  }}>
+                  <span style={{ position: 'absolute', bottom: '2px', right: '4px', fontSize: '10px', color: 'rgba(15,23,42,0.65)', fontWeight: 700, }} >
                     {file}{rank}
                   </span>
                 )}
               </button>
             );
-          })
+          }),
         )}
       </div>
     </div>
