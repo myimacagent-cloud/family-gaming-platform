@@ -1,7 +1,7 @@
 import type { BaseGameState } from '../types';
 
 export type CellState = 'empty' | 'ship' | 'hit' | 'miss';
-export type ShipType = 'carrier' | 'battleship' | 'cruiser' | 'submarine' | 'destroyer';
+export type ShipType = 'battleship' | 'cruiser' | 'submarine';
 
 export interface Ship {
   type: ShipType;
