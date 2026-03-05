@@ -173,7 +173,7 @@ function checkGameEnd(state: BattleshipState): { ended: boolean; winner: string 
 
 export const battleshipGame: GameDefinition<BattleshipState, BattleshipMove> = {
   id: GAME_ID,
-  displayName: 'Battleship 5x5',
+  displayName: '🚢 Battleship 5x5',
   description: 'Strategic naval warfare! Sink all enemy ships!',
   minPlayers: 2,
   maxPlayers: 2,

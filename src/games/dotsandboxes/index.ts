@@ -156,7 +156,7 @@ function checkGameEnd(state: DotsAndBoxesState): { ended: boolean; winner: strin
 
 export const dotsAndBoxesGame: GameDefinition<DotsAndBoxesState, DotsAndBoxesMove> = {
   id: GAME_ID,
-  displayName: 'Dots and Boxes (9×9)',
+  displayName: '⬜ Dots and Boxes',
   description: 'Connect dots to complete 9×9 boxes. Play online with family!',
   minPlayers: 2,
   maxPlayers: 2,

@@ -152,7 +152,7 @@ function checkGameEnd(state: MemoryState): { ended: boolean; winner: string | nu
 
 export const memoryGame: GameDefinition<MemoryState, MemoryMove> = {
   id: GAME_ID,
-  displayName: 'Memory',
+  displayName: '🃏 Memory',
   description: 'Flip cards to find matching pairs!',
   minPlayers: 1,
   maxPlayers: 4,

@@ -77,7 +77,7 @@ function checkGameEnd(state: ColorWarsState): { ended: boolean; winner: string |
 
 export const colorWarsGame: GameDefinition<ColorWarsState, ColorWarsMove> = {
   id: GAME_ID,
-  displayName: 'Color Wars',
+  displayName: '🎨 Color Wars',
   description: 'Take turns claiming squares. Most color tiles wins!',
   minPlayers: 2,
   maxPlayers: 2,

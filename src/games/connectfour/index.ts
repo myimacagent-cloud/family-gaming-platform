@@ -138,7 +138,7 @@ function checkGameEnd(state: ConnectFourState): { ended: boolean; winner: string
 
 export const connectFourGame: GameDefinition<ConnectFourState, ConnectFourMove> = {
   id: GAME_ID,
-  displayName: 'Connect Four',
+  displayName: '🔴 Connect Four',
   description: 'Drop your discs to connect four in a row!',
   minPlayers: 2,
   maxPlayers: 2,

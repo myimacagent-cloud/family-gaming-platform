@@ -98,7 +98,7 @@ function checkGameEnd(state: RpsState): { ended: boolean; winner: string | null;
 
 export const rockPaperScissorsGame: GameDefinition<RpsState, RpsMove> = {
   id: GAME_ID,
-  displayName: 'Rock Paper Scissors',
+  displayName: '✊ Rock Paper Scissors',
   description: 'Pick your move. Both reveals happen when everyone locks in.',
   minPlayers: 2,
   maxPlayers: 2,

@@ -13,7 +13,7 @@ import type { ChessState, ChessMove } from './logic';
 
 export const chessGameDefinition: GameDefinition<ChessState, ChessMove> = {
   id: GAME_ID,
-  displayName: 'Chess',
+  displayName: '♟️ Chess',
   description: 'Classic chess powered by chess.js for full legal move validation.',
   minPlayers: 2,
   maxPlayers: 2,

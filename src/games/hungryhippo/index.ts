@@ -109,7 +109,7 @@ function checkGameEnd(state: HungryHippoState): { ended: boolean; winner: string
 
 export const hungryHippoGame: GameDefinition<HungryHippoState, HungryHippoMove> = {
   id: GAME_ID,
-  displayName: 'Hungry Hippo',
+  displayName: '🦛 Hungry Hippo',
   description: 'Classic marble chomping game - race to eat the most marbles!',
   minPlayers: 2,
   maxPlayers: 4,
