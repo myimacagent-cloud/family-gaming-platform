@@ -9,10 +9,15 @@ const ROWS = ['1', '2', '3', '4', '5'];
 type ShipType = 'battleship' | 'cruiser' | 'submarine';
 
 export function BattleshipBoard({ state, mySymbol, onMove, disabled }: GameBoardProps<BattleshipState>) {
+  // Guard against undefined state
+  if (!state) {
+    return <div style={{ color: 'white', padding: 20 }}>Loading...</div>;
+  }
+  
   const isFinished = state.status === 'finished';
   const opponent = state.players.find(p => p.symbol !== mySymbol);
-  const myGrid = state.grids[mySymbol];
-  const opponentGrid = opponent ? state.grids[opponent.symbol] : null;
+  const myGrid = state.grids?.[mySymbol];
+  const opponentGrid = opponent ? state.grids?.[opponent.symbol] : null;
   const canAttack = state.phase === 'battle' && !disabled && state.currentAttacker === mySymbol;
   
   const [selectedShip, setSelectedShip] = useState<ShipType | null>(null);
