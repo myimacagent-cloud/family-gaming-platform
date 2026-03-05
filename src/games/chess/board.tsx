@@ -140,8 +140,8 @@ export function ChessBoard({ state, mySymbol, onMove, disabled }: ChessBoardProp
               const isLight = (rowIndex + colIndex) % 2 === 0;
               const isSelected = selectedSquare === square;
 
-              const lightSquare = '#d1d5db';
-              const darkSquare = '#374151';
+              const lightSquare = '#e5e7eb';
+              const darkSquare = '#000000';
               const bgColor = isSelected ? '#22d3ee' : (isLight ? lightSquare : darkSquare);
 
               return (
