@@ -7,6 +7,7 @@ import { rockPaperScissorsGame } from './rockpaperscissors';
 import { dotsAndBoxesGame } from './dotsandboxes';
 import { colorWarsGame } from './colorwars';
 import { hungryHippoGame } from './hungryhippo';
+import { connectFourGame } from './connectfour';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -18,6 +19,7 @@ export const gameRegistry: GameRegistry = {
   [dotsAndBoxesGame.id]: dotsAndBoxesGame,
   [colorWarsGame.id]: colorWarsGame,
   [hungryHippoGame.id]: hungryHippoGame,
+  [connectFourGame.id]: connectFourGame,
 };
 
 // Helper functions
