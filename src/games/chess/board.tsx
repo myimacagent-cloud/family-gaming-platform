@@ -21,18 +21,16 @@ function colorFromPlayerSymbol(state: ChessState, mySymbol: string): 'w' | 'b' |
   return null;
 }
 
-export function ChessBoard({
-  state,
-  mySymbol,
-  onMove,
-  disabled
-}: ChessBoardProps) {
+export function ChessBoard({ state, mySymbol, onMove, disabled }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const chess = useMemo(() => new Chess(state.fen), [state.fen]);
   const board = chess.board();
   const myColor = colorFromPlayerSymbol(state, mySymbol);
   const isMyTurn = myColor !== null && chess.turn() === myColor;
   const isFinished = state.status === 'finished';
+  
+  const p1 = state.players[0];
+  const p2 = state.players[1];
 
   const handleSquareClick = (
     square: Square,
@@ -72,142 +70,120 @@ export function ChessBoard({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+      {/* Player Identity */}
       <div style={{ 
-        background: 'rgba(255,255,255,0.95)', 
-        border: '2px solid #111827', 
+        display: 'flex', 
+        gap: 12, 
+        flexWrap: 'wrap', 
+        justifyContent: 'center',
+        background: 'rgba(255,255,255,0.95)',
+        padding: '8px 16px',
+        borderRadius: 12,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <span style={{
+          background: '#111827',
+          color: '#ffffff',
+          padding: '6px 12px',
+          borderRadius: 8,
+          fontWeight: 700,
+          fontSize: 14
+        }}>
+          ⚫ {p1?.displayName ?? 'Player 1'} (Black)
+        </span>
+        <span style={{
+          background: '#ffffff',
+          color: '#111827',
+          border: '2px solid #111827',
+          padding: '6px 12px',
+          borderRadius: 8,
+          fontWeight: 700,
+          fontSize: 14
+        }}>
+          ⚪ {p2?.displayName ?? 'Player 2'} (White)
+        </span>
+      </div>
+
+      {/* Turn indicator */}
+      <div style={{ 
+        background: isMyTurn ? '#dcfce7' : '#f3f4f6', 
+        border: isMyTurn ? '2px solid #22c55e' : '2px solid #9ca3af',
         borderRadius: 8, 
         padding: '10px 16px', 
         fontWeight: 800, 
-        color: '#111827',
+        color: isMyTurn ? '#166534' : '#374151',
         textAlign: 'center',
-        fontSize: '16px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        fontSize: '16px'
       }}>
-        {isFinished ? '🏁 Game Over!' : isMyTurn ? '🎯 Your Turn' : '⏳ Waiting for Opponent'}
+        {isFinished ? '🏁 Game Over!' : isMyTurn ? '🎯 Your Turn!' : '⏳ Waiting for Opponent'}
       </div>
 
-      <div style={{
+      {/* Chess Board */}
+      <div style={{ 
         display: 'flex',
         flexDirection: 'column',
-        background: '#111827',
-        padding: '24px 24px 24px 32px',
-        borderRadius: 12,
-        boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
-        position: 'relative',
+        background: '#1f2937', 
+        padding: '20px', 
+        borderRadius: 12, 
+        boxShadow: '0 12px 32px rgba(0,0,0,0.4)' 
       }}>
-        <div style={{ display: 'flex', marginLeft: 24 }}>
-          {FILES.map((f) => (
-            <div key={`top-${f}`} style={{ 
-              width: 'min(50px, calc((100vw - 100px) / 8))', 
-              textAlign: 'center', 
-              color: '#ffffff',
-              fontWeight: 700,
-              fontSize: 14,
-              paddingBottom: 4
-            }}>
-              {f.toUpperCase()}
-            </div>
-          ))}
-        </div>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(8, 1fr)',
+          border: '2px solid #4b5563'
+        }}>
+          {board.map((row, rowIndex) =>
+            row.map((piece, colIndex) => {
+              const rank = RANKS[rowIndex];
+              const file = FILES[colIndex];
+              const square = `${file}${rank}` as Square;
+              const isLight = (rowIndex + colIndex) % 2 === 0;
+              const isSelected = selectedSquare === square;
 
-        <div style={{ display: 'flex' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', marginRight: 4 }}>
-            {RANKS.map((r) => (
-              <div key={`left-${r}`} style={{ 
-                height: 'min(50px, calc((100vw - 100px) / 8))', 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontWeight: 700,
-                fontSize: 14
-              }}>
-                {r}
-              </div>
-            ))}
-          </div>
+              const lightSquare = '#d1d5db';
+              const darkSquare = '#374151';
+              const bgColor = isSelected ? '#22d3ee' : (isLight ? lightSquare : darkSquare);
 
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(8, 1fr)',
-            border: '3px solid #374151',
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)'
-          }}>
-            {board.map((row, rowIndex) =>
-              row.map((piece, colIndex) => {
-                const rank = RANKS[rowIndex];
-                const file = FILES[colIndex];
-                const square = `${file}${rank}` as Square;
-                const isLight = (rowIndex + colIndex) % 2 === 0;
-                const isSelected = selectedSquare === square;
-
-                const lightSquare = '#FFFFFF';
-                const darkSquare = '#000000';
-                const bgColor = isSelected ? '#22d3ee' : (isLight ? lightSquare : darkSquare);
-
-                return (
-                  <button
-                    key={square}
-                    onClick={() => handleSquareClick(square, piece)}
-                    disabled={disabled || isFinished || !isMyTurn}
-                    style={{
-                      width: 'min(50px, calc((100vw - 100px) / 8))',
-                      aspectRatio: '1 / 1',
-                      background: bgColor,
-                      border: isSelected ? '3px solid #0891b2' : 'none',
-                      cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
+              return (
+                <button
+                  key={square}
+                  onClick={() => handleSquareClick(square, piece)}
+                  disabled={disabled || isFinished || !isMyTurn}
+                  style={{
+                    width: 'min(48px, calc((100vw - 80px) / 8))',
+                    aspectRatio: '1 / 1',
+                    background: bgColor,
+                    border: isSelected ? '3px solid #0891b2' : '1px solid #4b5563',
+                    cursor: disabled || isFinished || !isMyTurn ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                    fontSize: 'clamp(24px, 5.5vw, 36px)'
+                  }}
+                >
+                  {piece ? (
+                    <span style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: 'clamp(32px, 6.5vw, 44px)',
-                      padding: 0,
-                    }}
-                  >
-                    {piece ? (
-                      <span style={{
-                        filter: piece.color === 'b' 
-                          ? 'drop-shadow(0.5px 0.5px 0.5px rgba(255,255,255,0.4))' 
-                          : 'drop-shadow(0.5px 0.5px 0.5px rgba(0,0,0,0.4))',
-                      }}>
-                        {CHESS_PIECES[piece.color][piece.type]}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 8 }}>
-            {RANKS.map((r) => (
-              <div key={`right-${r}`} style={{ 
-                height: 'min(50px, calc((100vw - 100px) / 8))', 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontWeight: 700,
-                fontSize: 14
-              }}>
-                {r}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', marginLeft: 24 }}>
-          {FILES.map((f) => (
-            <div key={`bottom-${f}`} style={{ 
-              width: 'min(50px, calc((100vw - 100px) / 8))', 
-              textAlign: 'center', 
-              color: '#ffffff',
-              fontWeight: 700,
-              fontSize: 14,
-              paddingTop: 4
-            }}>
-              {f.toUpperCase()}
-            </div>
-          ))}
+                      width: '75%',
+                      height: '75%',
+                      borderRadius: '50%',
+                      background: piece.color === 'w' ? '#ffffff' : '#111827',
+                      color: piece.color === 'w' ? '#111827' : '#ffffff',
+                      border: piece.color === 'w' ? '2px solid #111827' : '2px solid #6b7280',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      fontSize: 'clamp(18px, 4vw, 28px)',
+                      fontWeight: 700
+                    }}>
+                      {CHESS_PIECES[piece.color][piece.type]}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
