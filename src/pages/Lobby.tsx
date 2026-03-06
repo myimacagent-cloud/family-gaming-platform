@@ -32,6 +32,7 @@ export default function Lobby() {
   const [joinCode, setJoinCode] = useState('');
   const [selectedGameType, setSelectedGameType] = useState('');
   const [showGameSelect, setShowGameSelect] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   const games = getGameList();
 
@@ -41,6 +42,10 @@ export default function Lobby() {
     if (games.length > 0) {
       setSelectedGameType(games[0].id);
     }
+
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const handleCreateClick = () => {
@@ -79,10 +84,10 @@ export default function Lobby() {
   if (showGameSelect) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '30px', maxWidth: '980px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '30px', maxWidth: '1280px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
           <h1 style={{ textAlign: 'center', marginBottom: '10px', color: '#667eea' }}>🎮 Select a Game</h1>
           <p style={{ textAlign: 'center', color: '#666', marginBottom: '25px' }}>Pick from tile-style games below (3 across).</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '16px', marginBottom: '30px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(5, minmax(0, 1fr))', gap: '16px', marginBottom: '30px' }}>
             {games.map((game) => {
               const emoji = GAME_EMOJIS[game.id] ?? '🎲';
               const isSelected = selectedGameType === game.id;
