@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { GameBoardProps } from '../types';
 import type { BattleshipState, Orientation, PlayerBoard, ShipType } from './types';
 import { GRID_SIZE, SHIPS } from './types';
@@ -28,6 +28,17 @@ function blankBoard(): PlayerBoard {
 export function BattleshipBoard({ state, mySymbol, onMove, disabled }: GameBoardProps<BattleshipState>) {
   const [selectedShip, setSelectedShip] = useState<ShipType | null>(null);
   const [orientation, setOrientation] = useState<Orientation>('horizontal');
+  const [isDesktop, setIsDesktop] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1200 : false));
+
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 1200);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const cellSize = isDesktop ? 32 : 24;
+  const labelSize = isDesktop ? 30 : 24;
+  const colHeaderSize = isDesktop ? 34 : 26;
 
   const me = state.players.find((p) => p.symbol === mySymbol);
   const opponent = state.players.find((p) => p.symbol !== mySymbol);
@@ -56,17 +67,17 @@ export function BattleshipBoard({ state, mySymbol, onMove, disabled }: GameBoard
   };
 
   const renderGrid = (board: PlayerBoard, mode: 'ship' | 'target') => (
-    <div>
+    <div style={{ width: 'fit-content' }}>
       <div style={{ display: 'flex', marginBottom: 4 }}>
-        <div style={{ width: 24 }} />
+        <div style={{ width: labelSize }} />
         {COLS.map((n) => (
-          <div key={n} style={{ width: 26, textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#fff' }}>{n}</div>
+          <div key={n} style={{ width: colHeaderSize, textAlign: 'center', fontSize: isDesktop ? 12 : 10, fontWeight: 700, color: '#fff' }}>{n}</div>
         ))}
       </div>
 
       {Array.from({ length: GRID_SIZE }, (_, row) => (
         <div key={row} style={{ display: 'flex', alignItems: 'center', marginBottom: 2 }}>
-          <div style={{ width: 24, textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>{ROWS[row]}</div>
+          <div style={{ width: labelSize, textAlign: 'center', fontSize: isDesktop ? 14 : 11, fontWeight: 700, color: '#fff' }}>{ROWS[row]}</div>
           {Array.from({ length: GRID_SIZE }, (_, col) => {
             const hit = board.hits[row][col];
             const miss = board.misses[row][col];
@@ -85,8 +96,8 @@ export function BattleshipBoard({ state, mySymbol, onMove, disabled }: GameBoard
                 disabled={!canClick}
                 title={`${ROWS[row]}${col + 1}`}
                 style={{
-                  width: 24,
-                  height: 24,
+                  width: cellSize,
+                  height: cellSize,
                   margin: 1,
                   borderRadius: 4,
                   border: canClick ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.4)',
@@ -178,16 +189,20 @@ export function BattleshipBoard({ state, mySymbol, onMove, disabled }: GameBoard
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 12 }}>
-        <div style={{ background: 'rgba(15,23,42,0.9)', borderRadius: 14, padding: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 12 }}>
+        <div style={{ background: 'rgba(15,23,42,0.9)', borderRadius: 14, padding: 12 }}>
           <div style={{ color: '#fff', fontWeight: 700, marginBottom: 8 }}>🛡️ Ship Board ({me?.displayName || 'You'})</div>
-          {renderGrid(myBoard, 'ship')}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {renderGrid(myBoard, 'ship')}
+          </div>
           <div style={{ color: '#cbd5e1', fontSize: 12, marginTop: 6 }}>Gray ships, Red hits, White misses</div>
         </div>
 
-        <div style={{ background: 'rgba(30,27,75,0.9)', borderRadius: 14, padding: 10 }}>
+        <div style={{ background: 'rgba(30,27,75,0.9)', borderRadius: 14, padding: 12 }}>
           <div style={{ color: '#fff', fontWeight: 700, marginBottom: 8 }}>🎯 Target Board ({opponent?.displayName || 'Opponent'})</div>
-          {renderGrid(targetBoard, 'target')}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {renderGrid(targetBoard, 'target')}
+          </div>
           <div style={{ color: '#cbd5e1', fontSize: 12, marginTop: 6 }}>Red hits, White misses</div>
         </div>
       </div>
