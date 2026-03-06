@@ -103,7 +103,7 @@ export default function Lobby() {
                     background: isSelected ? 'rgba(102, 126, 234, 0.12)' : 'white',
                     cursor: 'pointer',
                     textAlign: 'left',
-                    minHeight: '124px',
+                    aspectRatio: '1 / 1',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
@@ -112,11 +112,34 @@ export default function Lobby() {
                   }}
                 >
                   <div style={{ fontSize: '24px', marginBottom: '8px' }}>{emoji}</div>
-                  <div style={{ fontWeight: 700, fontSize: '15px', color: '#222', marginBottom: '6px' }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      color: '#222',
+                      marginBottom: '6px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={game.displayName}
+                  >
                     {isSelected ? '✅ ' : ''}
                     {game.displayName}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666', lineHeight: 1.35 }}>{game.description}</div>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      color: '#666',
+                      lineHeight: 1.35,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {game.description}
+                  </div>
                 </div>
               );
             })}
