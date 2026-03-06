@@ -1,22 +1,18 @@
 import type { GameDefinition, MoveValidation } from '../types';
 import { BattleshipBoard } from './Board';
-import type { BattleshipMove, BattleshipState, ShipType } from './types';
-import {
-  BATTLESHIP_GRID_SIZE,
-  SHIP_DEFINITIONS,
-} from './types';
-import {
-  applyAttack,
-  boardIsReady,
-  canPlaceShip,
-  createEmptyBoard,
-  hasAlreadyAttacked,
-  isWithinBounds,
-  placeShipOnBoard,
-  remainingShips,
-} from './logic';
+import type { BattleshipMove, BattleshipState, PlayerBoard } from './types';
+import { SHIPS, type ShipType } from './types';
+import { alreadyTargeted, allShipsPlaced, attack, canPlace, createBoard, inBounds, place, shipsRemaining } from './logic';
 
 const GAME_ID = 'battleship';
+
+function withBoards(state: BattleshipState): Record<string, PlayerBoard> {
+  const boards = { ...state.boards };
+  for (const player of state.players) {
+    if (!boards[player.symbol]) boards[player.symbol] = createBoard();
+  }
+  return boards;
+}
 
 function createInitialState(_roomCode: string): BattleshipState {
   return {
@@ -32,21 +28,9 @@ function createInitialState(_roomCode: string): BattleshipState {
   };
 }
 
-function ensureBoards(state: BattleshipState): Record<string, ReturnType<typeof createEmptyBoard>> {
-  const boards = { ...state.boards };
-  for (const player of state.players) {
-    if (!boards[player.symbol]) {
-      boards[player.symbol] = createEmptyBoard();
-    }
-  }
-  return boards;
-}
-
 function createRestartState(currentState: BattleshipState): BattleshipState {
-  const nextBoards: Record<string, ReturnType<typeof createEmptyBoard>> = {};
-  for (const player of currentState.players) {
-    nextBoards[player.symbol] = createEmptyBoard();
-  }
+  const boards: Record<string, PlayerBoard> = {};
+  for (const p of currentState.players) boards[p.symbol] = createBoard();
 
   return {
     ...currentState,
@@ -54,7 +38,7 @@ function createRestartState(currentState: BattleshipState): BattleshipState {
     winner: null,
     currentPlayerIndex: 0,
     phase: 'setup',
-    boards: nextBoards,
+    boards,
     currentAttacker: null,
     lastAttack: null,
   };
@@ -62,91 +46,90 @@ function createRestartState(currentState: BattleshipState): BattleshipState {
 
 function validateMove(state: BattleshipState, move: BattleshipMove, playerSymbol: string): MoveValidation {
   if (state.status !== 'active') return { valid: false, error: 'Game is not active' };
-  if (!isWithinBounds(move.row, move.col)) {
-    return { valid: false, error: `Coordinates must be inside ${BATTLESHIP_GRID_SIZE}x${BATTLESHIP_GRID_SIZE}` };
-  }
+  if (!inBounds(move.row, move.col)) return { valid: false, error: 'Coordinate out of bounds' };
 
-  const boards = ensureBoards(state);
+  const boards = withBoards(state);
   const myBoard = boards[playerSymbol];
-  if (!myBoard) return { valid: false, error: 'Board not initialized' };
+  if (!myBoard) return { valid: false, error: 'Player board missing' };
 
   if (state.phase === 'setup') {
     if (move.action !== 'place_ship') return { valid: false, error: 'Place ships first' };
-    if (!move.shipType) return { valid: false, error: 'Select a ship to place' };
+    if (!move.shipType) return { valid: false, error: 'Ship type required' };
 
-    const allowedShip = SHIP_DEFINITIONS.some((ship) => ship.type === move.shipType);
-    if (!allowedShip) return { valid: false, error: 'Unknown ship type' };
+    const validShip = SHIPS.some((s) => s.type === move.shipType);
+    if (!validShip) return { valid: false, error: 'Unknown ship' };
 
-    if (!canPlaceShip(myBoard, move.shipType as ShipType, move.row, move.col, move.orientation || 'horizontal')) {
-      return { valid: false, error: 'Invalid placement (overlap or out of bounds)' };
+    if (!canPlace(myBoard, move.shipType as ShipType, move.row, move.col, move.orientation || 'horizontal')) {
+      return { valid: false, error: 'Invalid ship placement' };
     }
-
     return { valid: true };
   }
 
   if (state.phase === 'battle') {
-    if (move.action !== 'attack') return { valid: false, error: 'Use attack moves during battle phase' };
+    if (move.action !== 'attack') return { valid: false, error: 'Attack required' };
     if (state.currentAttacker !== playerSymbol) return { valid: false, error: 'Not your turn' };
 
-    const opponent = state.players.find((p) => p.symbol !== playerSymbol);
-    if (!opponent) return { valid: false, error: 'Waiting for opponent' };
+    const defender = state.players.find((p) => p.symbol !== playerSymbol);
+    if (!defender) return { valid: false, error: 'Opponent missing' };
 
-    const opponentBoard = boards[opponent.symbol];
-    if (!opponentBoard) return { valid: false, error: 'Opponent board not ready' };
+    const defenderBoard = boards[defender.symbol];
+    if (!defenderBoard) return { valid: false, error: 'Opponent board missing' };
 
-    if (hasAlreadyAttacked(opponentBoard, move.row, move.col)) {
+    if (alreadyTargeted(defenderBoard, move.row, move.col)) {
       return { valid: false, error: 'Coordinate already guessed' };
     }
 
     return { valid: true };
   }
 
-  return { valid: false, error: 'Invalid game phase' };
+  return { valid: false, error: 'Game already finished' };
 }
 
 function applyMove(state: BattleshipState, move: BattleshipMove, playerSymbol: string): BattleshipState {
-  const boards = ensureBoards(state);
+  const boards = withBoards(state);
 
   if (state.phase === 'setup' && move.action === 'place_ship' && move.shipType) {
     const myBoard = boards[playerSymbol];
-    const nextMyBoard = placeShipOnBoard(myBoard, move.shipType, move.row, move.col, move.orientation || 'horizontal');
+    if (!myBoard) return { ...state, boards };
+
     const nextBoards = {
       ...boards,
-      [playerSymbol]: nextMyBoard,
+      [playerSymbol]: place(myBoard, move.shipType, move.row, move.col, move.orientation || 'horizontal'),
     };
 
-    const playersReady = boardIsReady(nextBoards, state.players.map((p) => p.symbol));
-    if (playersReady) {
-      return {
-        ...state,
-        boards: nextBoards,
-        phase: 'battle',
-        currentAttacker: state.players[0]?.symbol || null,
-        currentPlayerIndex: 0,
-      };
+    const everyoneReady = state.players.every((p) => {
+      const board = nextBoards[p.symbol];
+      return board ? allShipsPlaced(board) : false;
+    });
+
+    if (!everyoneReady) {
+      return { ...state, boards: nextBoards };
     }
 
     return {
       ...state,
       boards: nextBoards,
+      phase: 'battle',
+      currentAttacker: state.players[0]?.symbol || null,
+      currentPlayerIndex: 0,
+      lastAttack: null,
     };
   }
 
   if (state.phase === 'battle' && move.action === 'attack') {
     const defender = state.players.find((p) => p.symbol !== playerSymbol);
-    if (!defender) return state;
+    if (!defender) return { ...state, boards };
 
     const defenderBoard = boards[defender.symbol];
-    if (!defenderBoard) return state;
+    if (!defenderBoard) return { ...state, boards };
 
-    const attack = applyAttack(defenderBoard, move.row, move.col);
+    const outcome = attack(defenderBoard, move.row, move.col);
     const nextBoards = {
       ...boards,
-      [defender.symbol]: attack.board,
+      [defender.symbol]: outcome.board,
     };
 
-    const defenderShipsRemaining = remainingShips(attack.board);
-    if (defenderShipsRemaining === 0) {
+    if (shipsRemaining(outcome.board) === 0) {
       return {
         ...state,
         boards: nextBoards,
@@ -158,8 +141,8 @@ function applyMove(state: BattleshipState, move: BattleshipMove, playerSymbol: s
           defender: defender.symbol,
           row: move.row,
           col: move.col,
-          result: attack.result,
-          sunkShipType: attack.sunkShipType,
+          result: outcome.result,
+          sunkShip: outcome.sunkShip,
         },
       };
     }
@@ -175,16 +158,13 @@ function applyMove(state: BattleshipState, move: BattleshipMove, playerSymbol: s
         defender: defender.symbol,
         row: move.row,
         col: move.col,
-        result: attack.result,
-        sunkShipType: attack.sunkShipType,
+        result: outcome.result,
+        sunkShip: outcome.sunkShip,
       },
     };
   }
 
-  return {
-    ...state,
-    boards,
-  };
+  return { ...state, boards };
 }
 
 function checkGameEnd(state: BattleshipState): { ended: boolean; winner: string | null; draw: boolean } {
@@ -197,7 +177,7 @@ function checkGameEnd(state: BattleshipState): { ended: boolean; winner: string 
 export const battleshipGame: GameDefinition<BattleshipState, BattleshipMove> = {
   id: GAME_ID,
   displayName: '🚢 Battleship',
-  description: 'Classic 10x10 naval combat with full fleet setup.',
+  description: 'Classic 10x10 fleet battle. Sink all enemy ships!',
   minPlayers: 2,
   maxPlayers: 2,
   createInitialState,

@@ -1,39 +1,39 @@
 import type { BaseGameState } from '../types';
 
-export const BATTLESHIP_GRID_SIZE = 10;
+export const GRID_SIZE = 10;
 
-export const SHIP_DEFINITIONS = [
-  { type: 'carrier', length: 5, label: 'Carrier' },
-  { type: 'battleship', length: 4, label: 'Battleship' },
-  { type: 'cruiser', length: 3, label: 'Cruiser' },
-  { type: 'submarine', length: 3, label: 'Submarine' },
-  { type: 'destroyer', length: 2, label: 'Destroyer' },
+export const SHIPS = [
+  { type: 'carrier', label: 'Carrier', length: 5 },
+  { type: 'battleship', label: 'Battleship', length: 4 },
+  { type: 'cruiser', label: 'Cruiser', length: 3 },
+  { type: 'submarine', label: 'Submarine', length: 3 },
+  { type: 'destroyer', label: 'Destroyer', length: 2 },
 ] as const;
 
-export type ShipType = (typeof SHIP_DEFINITIONS)[number]['type'];
-export type ShipOrientation = 'horizontal' | 'vertical';
+export type ShipType = (typeof SHIPS)[number]['type'];
+export type Orientation = 'horizontal' | 'vertical';
 export type AttackResult = 'hit' | 'miss' | 'sunk';
 
-export interface Coordinate {
+export interface Coord {
   row: number;
   col: number;
 }
 
-export interface Ship {
+export interface ShipState {
   id: string;
   type: ShipType;
   length: number;
-  positions: Coordinate[];
+  cells: Coord[];
   hits: number;
   sunk: boolean;
 }
 
 export interface PlayerBoard {
-  ships: Ship[];
+  ships: ShipState[];
   shipCells: boolean[][];
   hits: boolean[][];
   misses: boolean[][];
-  placedShips: ShipType[];
+  placed: ShipType[];
 }
 
 export interface LastAttack {
@@ -42,7 +42,7 @@ export interface LastAttack {
   row: number;
   col: number;
   result: AttackResult;
-  sunkShipType?: ShipType;
+  sunkShip?: ShipType;
 }
 
 export interface BattleshipState extends BaseGameState {
@@ -58,5 +58,5 @@ export interface BattleshipMove {
   row: number;
   col: number;
   shipType?: ShipType;
-  orientation?: ShipOrientation;
+  orientation?: Orientation;
 }

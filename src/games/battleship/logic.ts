@@ -1,76 +1,65 @@
-import {
-  BATTLESHIP_GRID_SIZE,
-  SHIP_DEFINITIONS,
-  type PlayerBoard,
-  type Ship,
-  type ShipOrientation,
-  type ShipType,
-} from './types';
+import { GRID_SIZE, SHIPS, type Orientation, type PlayerBoard, type ShipState, type ShipType } from './types';
 
-function createGrid(defaultValue = false): boolean[][] {
-  return Array.from({ length: BATTLESHIP_GRID_SIZE }, () =>
-    Array.from({ length: BATTLESHIP_GRID_SIZE }, () => defaultValue)
-  );
+const cloneGrid = (grid: boolean[][]) => grid.map((r) => [...r]);
+
+export function makeGrid(value = false): boolean[][] {
+  return Array.from({ length: GRID_SIZE }, () => Array.from({ length: GRID_SIZE }, () => value));
 }
 
-export function createEmptyBoard(): PlayerBoard {
+export function createBoard(): PlayerBoard {
   return {
     ships: [],
-    shipCells: createGrid(false),
-    hits: createGrid(false),
-    misses: createGrid(false),
-    placedShips: [],
+    shipCells: makeGrid(false),
+    hits: makeGrid(false),
+    misses: makeGrid(false),
+    placed: [],
   };
 }
 
-export function getShipDefinition(type: ShipType) {
-  return SHIP_DEFINITIONS.find((s) => s.type === type);
+export function inBounds(row: number, col: number): boolean {
+  return row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE;
 }
 
-export function isWithinBounds(row: number, col: number): boolean {
-  return row >= 0 && row < BATTLESHIP_GRID_SIZE && col >= 0 && col < BATTLESHIP_GRID_SIZE;
+export function getShip(type: ShipType) {
+  return SHIPS.find((s) => s.type === type);
 }
 
-export function getShipPositions(row: number, col: number, length: number, orientation: ShipOrientation) {
-  const positions: { row: number; col: number }[] = [];
-  for (let i = 0; i < length; i++) {
-    const nextRow = orientation === 'vertical' ? row + i : row;
-    const nextCol = orientation === 'horizontal' ? col + i : col;
-    positions.push({ row: nextRow, col: nextCol });
-  }
-  return positions;
+export function shipCells(row: number, col: number, length: number, orientation: Orientation) {
+  return Array.from({ length }, (_, i) => ({
+    row: orientation === 'vertical' ? row + i : row,
+    col: orientation === 'horizontal' ? col + i : col,
+  }));
 }
 
-export function canPlaceShip(board: PlayerBoard, shipType: ShipType, row: number, col: number, orientation: ShipOrientation): boolean {
-  const shipDef = getShipDefinition(shipType);
-  if (!shipDef) return false;
-  if (board.placedShips.includes(shipType)) return false;
+export function canPlace(board: PlayerBoard, type: ShipType, row: number, col: number, orientation: Orientation): boolean {
+  if (board.placed.includes(type)) return false;
+  const ship = getShip(type);
+  if (!ship) return false;
 
-  const positions = getShipPositions(row, col, shipDef.length, orientation);
-  for (const pos of positions) {
-    if (!isWithinBounds(pos.row, pos.col)) return false;
-    if (board.shipCells[pos.row][pos.col]) return false;
+  const cells = shipCells(row, col, ship.length, orientation);
+  for (const cell of cells) {
+    if (!inBounds(cell.row, cell.col)) return false;
+    if (board.shipCells[cell.row][cell.col]) return false;
   }
 
   return true;
 }
 
-export function placeShipOnBoard(board: PlayerBoard, shipType: ShipType, row: number, col: number, orientation: ShipOrientation): PlayerBoard {
-  const shipDef = getShipDefinition(shipType);
-  if (!shipDef) return board;
+export function place(board: PlayerBoard, type: ShipType, row: number, col: number, orientation: Orientation): PlayerBoard {
+  const ship = getShip(type);
+  if (!ship) return board;
 
-  const positions = getShipPositions(row, col, shipDef.length, orientation);
-  const nextShipCells = board.shipCells.map((line) => [...line]);
+  const cells = shipCells(row, col, ship.length, orientation);
+  const nextShipCells = cloneGrid(board.shipCells);
+  cells.forEach((c) => {
+    nextShipCells[c.row][c.col] = true;
+  });
 
-  for (const pos of positions) {
-    nextShipCells[pos.row][pos.col] = true;
-  }
-
-  const nextShip: Ship = {
-    id: `${shipType}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    type: shipType,
-    length: shipDef.length,
-    positions,
+  const newShip: ShipState = {
+    id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    type,
+    length: ship.length,
+    cells,
     hits: 0,
     sunk: false,
   };
@@ -78,77 +67,55 @@ export function placeShipOnBoard(board: PlayerBoard, shipType: ShipType, row: nu
   return {
     ...board,
     shipCells: nextShipCells,
-    ships: [...board.ships, nextShip],
-    placedShips: [...board.placedShips, shipType],
+    ships: [...board.ships, newShip],
+    placed: [...board.placed, type],
   };
 }
 
 export function allShipsPlaced(board: PlayerBoard): boolean {
-  return SHIP_DEFINITIONS.every((s) => board.placedShips.includes(s.type));
+  return SHIPS.every((s) => board.placed.includes(s.type));
 }
 
-export function boardIsReady(boards: Record<string, PlayerBoard>, symbols: string[]): boolean {
-  return symbols.every((symbol) => {
-    const board = boards[symbol];
-    return board ? allShipsPlaced(board) : false;
-  });
-}
-
-export function hasAlreadyAttacked(board: PlayerBoard, row: number, col: number): boolean {
+export function alreadyTargeted(board: PlayerBoard, row: number, col: number): boolean {
   return board.hits[row][col] || board.misses[row][col];
 }
 
-export function applyAttack(board: PlayerBoard, row: number, col: number): {
+export function attack(board: PlayerBoard, row: number, col: number): {
   board: PlayerBoard;
   result: 'hit' | 'miss' | 'sunk';
-  sunkShipType?: ShipType;
+  sunkShip?: ShipType;
 } {
-  const nextHits = board.hits.map((line) => [...line]);
-  const nextMisses = board.misses.map((line) => [...line]);
+  const nextHits = cloneGrid(board.hits);
+  const nextMisses = cloneGrid(board.misses);
 
-  if (board.shipCells[row][col]) {
-    nextHits[row][col] = true;
-
-    let sunkShipType: ShipType | undefined;
-    const nextShips = board.ships.map((ship) => {
-      const isPartOfShip = ship.positions.some((pos) => pos.row === row && pos.col === col);
-      if (!isPartOfShip || ship.sunk) return ship;
-
-      const nextHitsCount = ship.hits + 1;
-      const nextSunk = nextHitsCount >= ship.length;
-      if (nextSunk) sunkShipType = ship.type;
-
-      return {
-        ...ship,
-        hits: nextHitsCount,
-        sunk: nextSunk,
-      };
-    });
-
+  if (!board.shipCells[row][col]) {
+    nextMisses[row][col] = true;
     return {
-      board: {
-        ...board,
-        hits: nextHits,
-        misses: nextMisses,
-        ships: nextShips,
-      },
-      result: sunkShipType ? 'sunk' : 'hit',
-      sunkShipType,
+      board: { ...board, hits: nextHits, misses: nextMisses },
+      result: 'miss',
     };
   }
 
-  nextMisses[row][col] = true;
+  nextHits[row][col] = true;
+  let sunkShip: ShipType | undefined;
+  const nextShips = board.ships.map((ship) => {
+    const touched = ship.cells.some((c) => c.row === row && c.col === col);
+    if (!touched || ship.sunk) return ship;
+
+    const hits = ship.hits + 1;
+    const sunk = hits >= ship.length;
+    if (sunk) sunkShip = ship.type;
+
+    return { ...ship, hits, sunk };
+  });
+
   return {
-    board: {
-      ...board,
-      hits: nextHits,
-      misses: nextMisses,
-      ships: board.ships,
-    },
-    result: 'miss',
+    board: { ...board, hits: nextHits, misses: nextMisses, ships: nextShips },
+    result: sunkShip ? 'sunk' : 'hit',
+    sunkShip,
   };
 }
 
-export function remainingShips(board: PlayerBoard): number {
-  return board.ships.filter((ship) => !ship.sunk).length;
+export function shipsRemaining(board: PlayerBoard): number {
+  return board.ships.filter((s) => !s.sunk).length;
 }
