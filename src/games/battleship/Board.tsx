@@ -1,183 +1,209 @@
+import { useMemo, useState } from 'react';
 import type { GameBoardProps } from '../types';
-import type { BattleshipState } from './types';
-import { useState } from 'react';
+import type { BattleshipState, PlayerBoard, ShipType } from './types';
+import { BATTLESHIP_GRID_SIZE, SHIP_DEFINITIONS } from './types';
 
-const GRID_SIZE = 5;
-const COLS = ['A', 'B', 'C', 'D', 'E'];
-const ROWS = ['1', '2', '3', '4', '5'];
+const ROW_LABELS = 'ABCDEFGHIJ'.split('');
+const COL_LABELS = Array.from({ length: BATTLESHIP_GRID_SIZE }, (_, i) => String(i + 1));
 
-type ShipType = 'battleship' | 'cruiser' | 'submarine';
+const SHIP_EMOJI: Record<ShipType, string> = {
+  carrier: '🛳️',
+  battleship: '🚢',
+  cruiser: '⛴️',
+  submarine: '🛥️',
+  destroyer: '🚤',
+};
 
 export function BattleshipBoard({ state, mySymbol, onMove, disabled }: GameBoardProps<BattleshipState>) {
-  // Guard against undefined state
-  if (!state) {
-    return <div style={{ color: 'white', padding: 20 }}>Loading...</div>;
-  }
-  
-  const isFinished = state.status === 'finished';
-  const opponent = state.players.find(p => p.symbol !== mySymbol);
-  const myGrid = state.grids?.[mySymbol];
-  const opponentGrid = opponent ? state.grids?.[opponent.symbol] : null;
-  const canAttack = state.phase === 'battle' && !disabled && state.currentAttacker === mySymbol;
-  
+  if (!state) return null;
+
   const [selectedShip, setSelectedShip] = useState<ShipType | null>(null);
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+
+  const me = state.players.find((p) => p.symbol === mySymbol);
+  const opponent = state.players.find((p) => p.symbol !== mySymbol);
+
+  const myBoard: PlayerBoard | undefined = state.boards?.[mySymbol];
+  const opponentBoard: PlayerBoard | undefined = opponent ? state.boards?.[opponent.symbol] : undefined;
+
+  const canPlace = state.phase === 'setup' && !disabled;
+  const canAttack = state.phase === 'battle' && !disabled && state.currentAttacker === mySymbol;
+
+  const setupPlacedCount = myBoard?.placedShips.length || 0;
+  const isMyTurn = state.currentAttacker === mySymbol;
+
+  const statusText = useMemo(() => {
+    if (state.phase === 'setup') {
+      return `Place your fleet (${setupPlacedCount}/${SHIP_DEFINITIONS.length})`;
+    }
+    if (state.phase === 'battle') {
+      return isMyTurn ? 'Your turn — choose a target on enemy waters.' : "Opponent's turn.";
+    }
+    if (state.status === 'finished') {
+      return state.winner === mySymbol ? 'You won! All enemy ships sunk.' : 'Defeat. Your fleet was sunk.';
+    }
+    return '';
+  }, [state.phase, state.status, state.winner, mySymbol, isMyTurn, setupPlacedCount]);
+
+  const handlePlace = (row: number, col: number) => {
+    if (!canPlace || !selectedShip) return;
+    onMove({ action: 'place_ship', row, col, shipType: selectedShip, orientation });
+  };
 
   const handleAttack = (row: number, col: number) => {
     if (!canAttack) return;
     onMove({ action: 'attack', row, col });
   };
 
-  const handlePlaceShip = (row: number, col: number) => {
-    if (!selectedShip || !myGrid) return;
-    onMove({ action: 'place_ship', row, col, shipType: selectedShip, orientation });
-  };
-
-  const renderCell = (cell: string, r: number, c: number, isMyGrid: boolean) => {
-    const isSetup = state.phase === 'setup';
-    const canClick = isMyGrid 
-      ? (isSetup && selectedShip && cell === 'empty')
-      : (state.phase === 'battle' && canAttack && cell !== 'hit');
-    
-    let bgColor = '#1e40af';
-    let emoji = '';
-    
-    if (cell === 'ship' && isMyGrid) {
-      bgColor = '#7c3aed';
-      emoji = '🚢';
-    } else if (cell === 'hit') {
-      bgColor = '#ef4444';
-      emoji = '💥';
-    } else if (cell === 'miss') {
-      bgColor = '#64748b';
-      emoji = '•';
+  const renderBoard = (board: PlayerBoard | undefined, mode: 'ship' | 'target') => {
+    if (!board) {
+      return <div style={{ color: '#fff', fontSize: 14 }}>Waiting for board...</div>;
     }
-    
-    return (
-      <button
-        key={`cell-${r}-${c}`}
-        onClick={() => {
-          if (isMyGrid && isSetup && selectedShip && cell === 'empty') {
-            handlePlaceShip(r, c);
-          } else if (!isMyGrid && cell !== 'hit' && cell !== 'miss') {
-            handleAttack(r, c);
-          }
-        }}
-        disabled={!canClick}
-        style={{
-          width: 56, height: 56, margin: 2, backgroundColor: bgColor,
-          border: canClick ? '4px solid #fbbf24' : '3px solid #475569',
-          borderRadius: 6, fontSize: 28,
-          cursor: canClick ? 'pointer' : 'default',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}
-      >
-        {emoji}
-      </button>
-    );
-  };
 
-  const renderGrid = (isMyGrid: boolean) => {
-    const grid = isMyGrid ? myGrid : opponentGrid;
-    const cells = grid?.cells || Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('empty'));
-    
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 auto' }}>
-        <div style={{ display: 'flex', marginBottom: 4 }}>
-          <div style={{ width: 44 }}></div>
-          {COLS.map(col => (
-            <div key={col} style={{ width: 60, textAlign: 'center', fontWeight: 700, fontSize: 18, color: isMyGrid ? '#60a5fa' : '#f87171' }}>{col}</div>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+          <div style={{ width: 28 }} />
+          {COL_LABELS.map((label) => (
+            <div key={label} style={{ width: 28, textAlign: 'center', color: '#fff', fontSize: 11, fontWeight: 700 }}>
+              {label}
+            </div>
           ))}
         </div>
-        
-        {cells.map((row, rIdx) => (
-          <div key={rIdx} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: 44, textAlign: 'center', fontWeight: 700, fontSize: 18, color: isMyGrid ? '#60a5fa' : '#f87171' }}>{ROWS[rIdx]}</div>
-            {row.map((cell, cIdx) => renderCell(cell, rIdx, cIdx, isMyGrid))}
+
+        {Array.from({ length: BATTLESHIP_GRID_SIZE }, (_, row) => (
+          <div key={row} style={{ display: 'flex', alignItems: 'center', marginBottom: 2 }}>
+            <div style={{ width: 28, textAlign: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>{ROW_LABELS[row]}</div>
+            {Array.from({ length: BATTLESHIP_GRID_SIZE }, (_, col) => {
+              const isHit = board.hits[row][col];
+              const isMiss = board.misses[row][col];
+              const hasShip = board.shipCells[row][col];
+              const isUnknownTarget = mode === 'target' && !isHit && !isMiss;
+
+              const bg = isHit ? '#ef4444' : isMiss ? '#ffffff' : mode === 'ship' && hasShip ? '#9ca3af' : '#1e3a8a';
+              const canClick = mode === 'ship'
+                ? canPlace && !!selectedShip && !hasShip
+                : canAttack && isUnknownTarget;
+
+              return (
+                <button
+                  key={`${mode}-${row}-${col}`}
+                  onClick={() => (mode === 'ship' ? handlePlace(row, col) : handleAttack(row, col))}
+                  disabled={!canClick}
+                  title={`${ROW_LABELS[row]}${col + 1}`}
+                  style={{
+                    width: 26,
+                    height: 26,
+                    margin: 1,
+                    borderRadius: 4,
+                    border: canClick ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.45)',
+                    background: bg,
+                    cursor: canClick ? 'pointer' : 'default',
+                    padding: 0,
+                  }}
+                />
+              );
+            })}
           </div>
         ))}
       </div>
     );
   };
 
-  const myShips = myGrid?.ships || [];
-  const shipsToPlace: { type: ShipType; emoji: string; len: number }[] = [
-    { type: 'battleship', emoji: '⛴️', len: 3 },
-    { type: 'cruiser', emoji: '🛳️', len: 2 },
-    { type: 'submarine', emoji: '🛥️', len: 2 },
-  ];
-
   return (
-    <div style={{ padding: 20, textAlign: 'center' }}>
-      <h2 style={{ color: '#fff', fontSize: 32, marginBottom: 16 }}>🚢 Battleship</h2>
-      
-      <div style={{ 
-        background: state.phase === 'setup' ? '#fef3c7' : canAttack ? '#dcfce7' : '#fecaca',
-        padding: '16px', borderRadius: 12, marginBottom: 20, fontWeight: 700, fontSize: 18,
-        border: '4px solid ' + (state.phase === 'setup' ? '#fbbf24' : canAttack ? '#22c55e' : '#ef4444')
-      }}>
-        {state.phase === 'setup' ? '📍 Place 3 ships on YOUR grid' :
-         canAttack ? '💥 Attack enemy waters!' :
-         '⏳ Waiting...'}
-      </div>
-
-      {state.phase === 'setup' && (
-        <div style={{ background: '#1e1b4b', padding: 20, borderRadius: 16, marginBottom: 20 }}>
-          <p style={{ color: '#fff', fontWeight: 700, marginBottom: 12 }}>Select ship, then click YOUR grid:</p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 12 }}>
-            {shipsToPlace.map(({ type, emoji, len }) => {
-              const placed = myShips.some((s: any) => s.type === type);
-              const selected = selectedShip === type;
-              return (
-                <button key={type} onClick={() => !placed && setSelectedShip(type)}
-                  style={{
-                    background: placed ? '#22c55e' : selected ? '#fbbf24' : '#3b82f6',
-                    color: '#000', padding: '14px 24px', borderRadius: 12,
-                    fontWeight: 700, fontSize: 14,
-                    border: selected ? '3px solid #fff' : 'none'
-                  }}>
-                  {emoji} {type} ({len}) {placed ? '✓' : selected ? '←' : ''}
-                </button>
-              );
-            })}
-          </div>
-          {selectedShip && (
-            <div>
-              <p style={{ color: '#fbbf24', fontWeight: 700 }}>Choose direction:</p>
-              <button onClick={() => setOrientation('horizontal')}
-                style={{ background: orientation === 'horizontal' ? '#22c55e' : '#64748b', color: '#fff', padding: '10px 20px', borderRadius: 8, marginRight: 8 }}>
-                ↔ Horizontal
-              </button>
-              <button onClick={() => setOrientation('vertical')}
-                style={{ background: orientation === 'vertical' ? '#22c55e' : '#64748b', color: '#fff', padding: '10px 20px', borderRadius: 8 }}>
-                ↕ Vertical
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 20 }}>
-        <div style={{ background: '#0f172a', padding: 24, borderRadius: 16 }}>
-          <h3 style={{ color: '#60a5fa', marginBottom: 8 }}>🛡️ YOUR FLEET</h3>
-          <p style={{ color: '#fff', fontSize: 16 }}>{myShips.length}/3 ships placed</p>
-          {renderGrid(true)}
-        </div>
-        
-        {state.phase === 'battle' && (
-          <div style={{ background: '#1e1b4b', padding: 24, borderRadius: 16 }}>
-            <h3 style={{ color: '#f87171', marginBottom: 8 }}>🎯 ENEMY WATERS</h3>
-            <p style={{ color: '#fff', fontSize: 16 }}>Click blue cells to attack</p>
-            {renderGrid(false)}
+    <div style={{ width: '100%', maxWidth: 1100, padding: 20 }}>
+      <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 16, padding: '14px 18px', marginBottom: 14 }}>
+        <div style={{ fontWeight: 800, color: '#1f2937' }}>🚢 Battleship</div>
+        <div style={{ color: '#334155', fontWeight: 600, fontSize: 14 }}>{statusText}</div>
+        {state.lastAttack && (
+          <div style={{ marginTop: 6, fontSize: 13, color: '#475569' }}>
+            Last attack: {ROW_LABELS[state.lastAttack.row]}{state.lastAttack.col + 1} —
+            {state.lastAttack.result === 'sunk' && state.lastAttack.sunkShipType
+              ? ` Ship sunk (${state.lastAttack.sunkShipType})`
+              : state.lastAttack.result === 'hit'
+                ? ' Hit'
+                : ' Miss'}
           </div>
         )}
       </div>
 
-      {isFinished && (
-        <div style={{ background: '#fbbf24', padding: 24, borderRadius: 16, marginTop: 20 }}>
-          <h2 style={{ color: '#000', margin: 0 }}>{state.winner === mySymbol ? '🏆 You Win!' : '💥 You Lost'}</h2>
+      {state.phase === 'setup' && (
+        <div style={{ background: 'rgba(15, 23, 42, 0.85)', borderRadius: 14, padding: 14, marginBottom: 14 }}>
+          <div style={{ color: '#fff', fontWeight: 700, marginBottom: 8 }}>Ship placement</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            {SHIP_DEFINITIONS.map((ship) => {
+              const isPlaced = !!myBoard?.placedShips.includes(ship.type);
+              const isSelected = selectedShip === ship.type;
+              return (
+                <button
+                  key={ship.type}
+                  disabled={isPlaced}
+                  onClick={() => setSelectedShip(ship.type)}
+                  style={{
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '8px 12px',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    background: isPlaced ? '#22c55e' : isSelected ? '#fbbf24' : '#334155',
+                    color: isPlaced || isSelected ? '#0f172a' : '#fff',
+                    cursor: isPlaced ? 'default' : 'pointer',
+                  }}
+                >
+                  {SHIP_EMOJI[ship.type]} {ship.label} ({ship.length}) {isPlaced ? '✓' : ''}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => setOrientation('horizontal')}
+              style={{
+                border: 'none',
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontWeight: 700,
+                background: orientation === 'horizontal' ? '#f59e0b' : '#475569',
+                color: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              ↔ Horizontal
+            </button>
+            <button
+              onClick={() => setOrientation('vertical')}
+              style={{
+                border: 'none',
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontWeight: 700,
+                background: orientation === 'vertical' ? '#f59e0b' : '#475569',
+                color: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              ↕ Vertical
+            </button>
+          </div>
         </div>
       )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
+        <div style={{ background: 'rgba(15, 23, 42, 0.9)', borderRadius: 14, padding: 12 }}>
+          <div style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 8 }}>🛡️ Ship Board ({me?.displayName || 'You'})</div>
+          {renderBoard(myBoard, 'ship')}
+          <div style={{ marginTop: 8, fontSize: 12, color: '#cbd5e1' }}>Gray = ships, Red = hit, White = miss</div>
+        </div>
+
+        <div style={{ background: 'rgba(30, 27, 75, 0.9)', borderRadius: 14, padding: 12 }}>
+          <div style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 8 }}>
+            🎯 Target Board ({opponent?.displayName || 'Opponent'})
+          </div>
+          {renderBoard(opponentBoard, 'target')}
+          <div style={{ marginTop: 8, fontSize: 12, color: '#cbd5e1' }}>Red = hit, White = miss</div>
+        </div>
+      </div>
     </div>
   );
 }
