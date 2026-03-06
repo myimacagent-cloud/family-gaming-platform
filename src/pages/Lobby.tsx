@@ -16,6 +16,7 @@ const GAME_EMOJIS: Record<string, string> = {
   connectfour: '🔴🟡',
   memory: '🧩🧠',
   marblesevenodd: '⚪🔢',
+  battleship: '🚢💥',
 };
 
 function safeGetStorage(key: string): string | null {

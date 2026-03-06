@@ -10,6 +10,7 @@ import { hungryHippoGame } from './hungryhippo';
 import { connectFourGame } from './connectfour';
 import { memoryGame } from './memory';
 import { marblesEvenOddGame } from './marblesevenodd';
+import { battleshipGame } from './battleship';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -24,6 +25,7 @@ export const gameRegistry: GameRegistry = {
   [connectFourGame.id]: connectFourGame,
   [memoryGame.id]: memoryGame,
   [marblesEvenOddGame.id]: marblesEvenOddGame,
+  [battleshipGame.id]: battleshipGame,
 };
 
 // Helper functions
