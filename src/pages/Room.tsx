@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { getGame } from '../games/registry';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -141,16 +141,15 @@ export default function Room() {
     return '';
   };
 
-  const gameBoard = useMemo(() => {
-    if (!roomState || !gameDefinition) return null;
-    return gameDefinition.renderBoard({
-      state: roomState as any,
-      myPlayerId: userId,
-      mySymbol: currentPlayer?.symbol || '',
-      onMove: handleMakeMove,
-      disabled: connectionState !== 'connected',
-    });
-  }, [roomState, gameDefinition, userId, currentPlayer?.symbol, connectionState]);
+  const GameBoardComponent = gameDefinition?.renderBoard as
+    | ((props: {
+        state: any;
+        myPlayerId: string;
+        mySymbol: string;
+        onMove: (move: unknown) => void;
+        disabled: boolean;
+      }) => ReactNode)
+    | undefined;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
@@ -215,7 +214,15 @@ export default function Room() {
           </div>
         )}
 
-        {gameBoard}
+        {roomState && gameDefinition && GameBoardComponent && (
+          <GameBoardComponent
+            state={roomState as any}
+            myPlayerId={userId}
+            mySymbol={currentPlayer?.symbol || ''}
+            onMove={handleMakeMove}
+            disabled={connectionState !== 'connected'}
+          />
+        )}
 
         {roomState && !gameDefinition && (
           <div style={{ background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.35)', color: '#fff', borderRadius: '12px', padding: '10px 14px', fontWeight: 600 }}>
