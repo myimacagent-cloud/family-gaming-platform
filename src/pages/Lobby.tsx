@@ -18,6 +18,22 @@ const GAME_EMOJIS: Record<string, string> = {
   battleship: '🚢💥',
 };
 
+function safeGetStorage(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetStorage(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore storage errors (e.g., private browsing restrictions)
+  }
+}
+
 function generateRoomCode(): string {
   let code = '';
   for (let i = 0; i < 6; i++) {
@@ -32,12 +48,12 @@ export default function Lobby() {
   const [joinCode, setJoinCode] = useState('');
   const [selectedGameType, setSelectedGameType] = useState('');
   const [showGameSelect, setShowGameSelect] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 768 : false));
 
   const games = getGameList();
 
   useEffect(() => {
-    const saved = localStorage.getItem('displayName');
+    const saved = safeGetStorage('displayName');
     if (saved) setDisplayName(saved);
     if (games.length > 0) {
       setSelectedGameType(games[0].id);
@@ -57,8 +73,8 @@ export default function Lobby() {
   };
 
   const handleCreateRoom = () => {
-    localStorage.setItem('displayName', displayName);
-    localStorage.setItem('userId', localStorage.getItem('userId') || crypto.randomUUID());
+    safeSetStorage('displayName', displayName);
+    safeSetStorage('userId', safeGetStorage('userId') || crypto.randomUUID());
     const roomCode = generateRoomCode();
     navigate(`/room/${roomCode}`, { state: { gameType: selectedGameType } });
   };
@@ -72,8 +88,8 @@ export default function Lobby() {
       alert('Please enter a valid 6-character room code!');
       return;
     }
-    localStorage.setItem('displayName', displayName);
-    localStorage.setItem('userId', localStorage.getItem('userId') || crypto.randomUUID());
+    safeSetStorage('displayName', displayName);
+    safeSetStorage('userId', safeGetStorage('userId') || crypto.randomUUID());
     navigate(`/room/${joinCode.toUpperCase()}`);
   };
 
