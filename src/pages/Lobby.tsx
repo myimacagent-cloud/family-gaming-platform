@@ -4,6 +4,20 @@ import { getGameList } from '../games/registry';
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+const GAME_EMOJIS: Record<string, string> = {
+  tictactoe: '❌⭕',
+  'tictactoe-3piece': '🧠❌⭕',
+  hangman: '🪢🔤',
+  chess: '♟️👑',
+  rockpaperscissors: '🪨📄✂️',
+  dotsandboxes: '🔵📦',
+  colorwars: '🌈⚔️',
+  hungryhippo: '🦛🍉',
+  connectfour: '🔴🟡',
+  memory: '🧩🧠',
+  battleship: '🚢💥',
+};
+
 function generateRoomCode(): string {
   let code = '';
   for (let i = 0; i < 6; i++) {
@@ -65,16 +79,42 @@ export default function Lobby() {
   if (showGameSelect) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '30px', maxWidth: '800px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '30px', maxWidth: '980px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
           <h1 style={{ textAlign: 'center', marginBottom: '10px', color: '#667eea' }}>🎮 Select a Game</h1>
-          <p style={{ textAlign: 'center', color: '#666', marginBottom: '25px' }}>Choose a game to play!</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '30px' }}>
-            {games.map((game) => (
-              <div key={game.id} onClick={() => setSelectedGameType(game.id)} style={{ padding: '20px', borderRadius: '12px', border: selectedGameType === game.id ? '3px solid #667eea' : '2px solid #e0e0e0', background: selectedGameType === game.id ? 'rgba(102, 126, 234, 0.1)' : 'white', cursor: 'pointer', textAlign: 'center' }}>
-                <div style={{ fontWeight: 700, fontSize: '16px', color: '#333', marginBottom: '6px' }}>{selectedGameType === game.id ? '✅' : '⭕'} {game.displayName}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>{game.description}</div>
-              </div>
-            ))}
+          <p style={{ textAlign: 'center', color: '#666', marginBottom: '25px' }}>Pick from tile-style games below (3 across).</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '16px', marginBottom: '30px' }}>
+            {games.map((game) => {
+              const emoji = GAME_EMOJIS[game.id] ?? '🎲';
+              const isSelected = selectedGameType === game.id;
+
+              return (
+                <div
+                  key={game.id}
+                  onClick={() => setSelectedGameType(game.id)}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '14px',
+                    border: isSelected ? '3px solid #667eea' : '2px solid #e0e0e0',
+                    background: isSelected ? 'rgba(102, 126, 234, 0.12)' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    minHeight: '124px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: isSelected ? '0 6px 18px rgba(102, 126, 234, 0.25)' : '0 2px 10px rgba(0,0,0,0.06)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>{emoji}</div>
+                  <div style={{ fontWeight: 700, fontSize: '15px', color: '#222', marginBottom: '6px' }}>
+                    {isSelected ? '✅ ' : ''}
+                    {game.displayName}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666', lineHeight: 1.35 }}>{game.description}</div>
+                </div>
+              );
+            })}
           </div>
           <button onClick={handleCreateRoom} style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 600, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '15px' }}>
             Create Room
