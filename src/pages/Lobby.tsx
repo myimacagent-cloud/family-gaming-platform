@@ -15,6 +15,7 @@ const GAME_EMOJIS: Record<string, string> = {
   hungryhippo: '🦛🍉',
   connectfour: '🔴🟡',
   memory: '🧩🧠',
+  marblesevenodd: '⚪🔢',
 };
 
 function safeGetStorage(key: string): string | null {
