@@ -64,6 +64,8 @@ export default function Room() {
   const location = useLocation();
   const userId = localStorage.getItem('userId') || '';
   const [showCopied, setShowCopied] = useState(false);
+  const [showLinkCopied, setShowLinkCopied] = useState(false);
+  const [showShareQr, setShowShareQr] = useState(false);
   const [gameStats, setGameStats] = useState<StatLine>(DEFAULT_STATS);
   const [lastRecordedRound, setLastRecordedRound] = useState<number>(0);
   const initialGameType = (location.state as { gameType?: string } | null)?.gameType;
@@ -77,6 +79,17 @@ export default function Room() {
   const gameDefinition = useMemo(() => {
     return gameType ? getGame(gameType) : undefined;
   }, [gameType]);
+
+  const roomLink = useMemo(() => {
+    if (!roomCode) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/room/${roomCode}`;
+  }, [roomCode]);
+
+  const qrCodeUrl = useMemo(() => {
+    if (!roomLink) return '';
+    return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(roomLink)}`;
+  }, [roomLink]);
 
   useEffect(() => {
     if (!userId || !gameType) return;
@@ -125,6 +138,30 @@ export default function Room() {
     setTimeout(() => setShowCopied(false), 2000);
   };
 
+  const copyRoomLink = () => {
+    if (!roomLink) return;
+    navigator.clipboard.writeText(roomLink);
+    setShowLinkCopied(true);
+    setTimeout(() => setShowLinkCopied(false), 2000);
+  };
+
+  const shareRoom = async () => {
+    if (!roomLink) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join my Family Gaming room',
+          text: `Join my game room (${roomCode})`,
+          url: roomLink,
+        });
+        return;
+      } catch {
+        // fallback to copy link
+      }
+    }
+    copyRoomLink();
+  };
+
   const currentPlayer = roomState?.players.find(p => p.userId === userId);
   const currentPlayerSymbol = roomState?.players[roomState?.currentPlayerIndex ?? 0]?.symbol;
   const myTurn = currentPlayer?.symbol === currentPlayerSymbol && roomState?.status === 'active';
@@ -158,12 +195,23 @@ export default function Room() {
           <h1 style={{ margin: 0, fontSize: '22px', color: '#333' }}>
             {gameDefinition?.displayName || 'Game Room'}
           </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ color: '#666', fontSize: '14px' }}>Room:</span>
             <code onClick={copyRoomCode} style={{ background: '#f0f0f0', padding: '6px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', letterSpacing: '2px', color: '#667eea', cursor: 'pointer' }}>
               {roomCode}
             </code>
-            {showCopied && <span style={{ color: '#10b981', fontSize: '12px' }}>Copied!</span>}
+            {showCopied && <span style={{ color: '#10b981', fontSize: '12px' }}>Code copied!</span>}
+
+            <button onClick={shareRoom} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#667eea', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+              Share
+            </button>
+            <button onClick={copyRoomLink} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+              Copy Link
+            </button>
+            <button onClick={() => setShowShareQr((v) => !v)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+              QR
+            </button>
+            {showLinkCopied && <span style={{ color: '#10b981', fontSize: '12px' }}>Link copied!</span>}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -182,6 +230,14 @@ export default function Room() {
       {error && (
         <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', color: '#fff', borderRadius: '12px', padding: '10px 14px', marginBottom: '14px', fontWeight: 600, textAlign: 'center' }}>
           {error}
+        </div>
+      )}
+
+      {showShareQr && roomLink && (
+        <div style={{ alignSelf: 'center', background: 'rgba(255,255,255,0.95)', borderRadius: '14px', padding: '14px', marginBottom: '14px', textAlign: 'center' }}>
+          <div style={{ fontWeight: 700, color: '#334155', marginBottom: '8px' }}>Scan to join room {roomCode}</div>
+          <img src={qrCodeUrl} alt="Room QR code" width={220} height={220} style={{ borderRadius: '10px', border: '1px solid #e5e7eb', background: '#fff' }} />
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#64748b', wordBreak: 'break-all' }}>{roomLink}</div>
         </div>
       )}
 
