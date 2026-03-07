@@ -6,7 +6,6 @@ import { chessGameDefinition } from './chess';
 import { rockPaperScissorsGame } from './rockpaperscissors';
 import { dotsAndBoxesGame } from './dotsandboxes';
 import { colorWarsGame } from './colorwars';
-import { hungryHippoGame } from './hungryhippo';
 import { connectFourGame } from './connectfour';
 import { memoryGame } from './memory';
 import { marblesEvenOddGame } from './marblesevenodd';
@@ -21,7 +20,6 @@ export const gameRegistry: GameRegistry = {
   [rockPaperScissorsGame.id]: rockPaperScissorsGame,
   [dotsAndBoxesGame.id]: dotsAndBoxesGame,
   [colorWarsGame.id]: colorWarsGame,
-  [hungryHippoGame.id]: hungryHippoGame,
   [connectFourGame.id]: connectFourGame,
   [memoryGame.id]: memoryGame,
   [marblesEvenOddGame.id]: marblesEvenOddGame,

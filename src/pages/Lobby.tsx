@@ -12,7 +12,6 @@ const GAME_EMOJIS: Record<string, string> = {
   rockpaperscissors: '🪨📄✂️',
   dotsandboxes: '🔵📦',
   colorwars: '🌈⚔️',
-  hungryhippo: '🦛🍉',
   connectfour: '🔴🟡',
   memory: '🧩🧠',
   marblesevenodd: '⚪🔢',
