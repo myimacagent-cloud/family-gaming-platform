@@ -23,6 +23,7 @@ const GAME_EMOJIS: Record<string, string> = {
   gofish: '🐟🃏',
   crazyeights: '8️⃣🃏',
   unolight: '🎴🌈',
+  blackjack: '🂡🃏',
 };
 
 function safeGetStorage(key: string): string | null {

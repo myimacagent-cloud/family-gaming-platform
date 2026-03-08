@@ -16,6 +16,7 @@ import { warGame } from './war';
 import { goFishGame } from './gofish';
 import { crazyEightsGame } from './crazyeights';
 import { unoLightGame } from './unolight';
+import { blackjackGame } from './blackjack';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -36,6 +37,7 @@ export const gameRegistry: GameRegistry = {
   [goFishGame.id]: goFishGame,
   [crazyEightsGame.id]: crazyEightsGame,
   [unoLightGame.id]: unoLightGame,
+  [blackjackGame.id]: blackjackGame,
 };
 
 // Helper functions

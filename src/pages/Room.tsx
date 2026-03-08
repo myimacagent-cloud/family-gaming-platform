@@ -148,6 +148,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends as soon as one player has no cards left.',
     differences: 'Custom Uno-style clone (Color Clash) with simplified 2-player room flow.',
   },
+  blackjack: {
+    howToPlay: 'Take turns choosing Hit (draw card) or Stand (hold).',
+    scoring: 'Closest hand total to 21 without going over wins.',
+    gameEnd: 'Ends when both players are done (stood or busted).',
+    differences: 'PvP showdown version (no dealer hand).',
+  },
 };
 
 type StatLine = {
