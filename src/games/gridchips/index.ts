@@ -3,8 +3,8 @@ import type { GridChipsState, GridChipsMove } from './types';
 import { GridChipsBoard } from './Board';
 
 const GAME_ID = 'gridchips';
-const ROWS = 5;
-const COLS = 5;
+const ROWS = 7;
+const COLS = 7;
 
 // Match the reference screenshot layout
 const START_A = 1 * COLS + 1; // row 2, col 2
