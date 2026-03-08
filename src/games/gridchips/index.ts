@@ -176,7 +176,7 @@ function checkGameEnd(state: GridChipsState): { ended: boolean; winner: string |
 
 export const gridChipsGame: GameDefinition<GridChipsState, GridChipsMove> = {
   id: GAME_ID,
-  displayName: '🔵🔴 Grid Chips',
+  displayName: '🎨 Color Wars',
   description: 'First tap starts at 3 dots. Then play only your own color. Burst and eliminate to win.',
   minPlayers: 2,
   maxPlayers: 2,
