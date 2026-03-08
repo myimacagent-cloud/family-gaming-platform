@@ -2,6 +2,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { getGame } from '../games/registry';
+import pixelPlaygroundLogo from '../assets/pixel-playground-logo.svg';
 
 const STATUS_COLORS: Record<string, string> = {
   connecting: '#f59e0b',
@@ -142,8 +143,8 @@ export default function Room() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join my Family Gaming room',
-          text: `Join my game room (${roomCode})`,
+          title: 'Join my Pixel Playground room',
+          text: `Join my Pixel Playground room (${roomCode})`,
           url: roomLink,
         });
         return;
@@ -181,12 +182,16 @@ export default function Room() {
     | undefined;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.95)', padding: '15px 25px', borderRadius: '15px', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0, fontSize: '22px', color: '#333' }}>
-            {gameDefinition?.displayName || 'Game Room'}
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src={pixelPlaygroundLogo} alt="Pixel Playground" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' }} />
+            <div>
+              <div style={{ margin: 0, fontSize: '12px', color: '#6D7DFF', fontWeight: 800 }}>PIXEL PLAYGROUND</div>
+              <h1 style={{ margin: 0, fontSize: '22px', color: '#333' }}>{gameDefinition?.displayName || 'Game Room'} ✨</h1>
+            </div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ color: '#666', fontSize: '14px' }}>Room:</span>
             <code onClick={copyRoomCode} style={{ background: '#f0f0f0', padding: '6px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', letterSpacing: '2px', color: '#667eea', cursor: 'pointer' }}>
@@ -194,7 +199,7 @@ export default function Room() {
             </code>
             {showCopied && <span style={{ color: '#10b981', fontSize: '12px' }}>Code copied!</span>}
 
-            <button onClick={shareRoom} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#667eea', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={shareRoom} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#6D7DFF', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
               Share
             </button>
             <button onClick={() => setShowShareQr((v) => !v)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
@@ -208,7 +213,7 @@ export default function Room() {
             {STATUS_TEXT[connectionState]}
           </div>
           {connectionState === 'offline' && (
-            <button onClick={reconnect} style={{ padding: '8px 16px', background: '#667eea', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+            <button onClick={reconnect} style={{ padding: '8px 16px', background: '#6D7DFF', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
               Reconnect
             </button>
           )}

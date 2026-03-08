@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGameList } from '../games/registry';
+import pixelPlaygroundLogo from '../assets/pixel-playground-logo.svg';
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -101,9 +102,9 @@ export default function Lobby() {
 
   if (showGameSelect) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)' }}>
         <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '30px', maxWidth: '1280px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-          <h1 style={{ textAlign: 'center', marginBottom: '10px', color: '#667eea' }}>🎮 Select a Game</h1>
+          <h1 style={{ textAlign: 'center', marginBottom: '10px', color: '#6D7DFF' }}>🕹️ Select a Pixel Playground Game</h1>
           <p style={{ textAlign: 'center', color: '#666', marginBottom: '25px' }}>Pick from tile-style games below (3 across).</p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(5, minmax(0, 1fr))', gap: '16px', marginBottom: '30px' }}>
             {games.map((game) => {
@@ -162,7 +163,7 @@ export default function Lobby() {
               );
             })}
           </div>
-          <button onClick={handleCreateRoom} style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 600, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '15px' }}>
+          <button onClick={handleCreateRoom} style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 600, background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '15px' }}>
             Create Room
           </button>
           <button onClick={handleBack} style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: 600, background: '#f0f0f0', color: '#333', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>
@@ -174,13 +175,14 @@ export default function Lobby() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)' }}>
       <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '40px', maxWidth: '450px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '10px', color: '#667eea' }}>🎮 Family Gaming</h1>
-        <p style={{ textAlign: 'center', color: '#666', marginBottom: '30px' }}>Play together, anywhere!</p>
+        <img src={pixelPlaygroundLogo} alt="Pixel Playground" style={{ width: '100%', maxHeight: 120, objectFit: 'contain', marginBottom: 8 }} />
+        <h1 style={{ textAlign: 'center', marginBottom: '8px', color: '#6D7DFF' }}>✨ Pixel Playground ✨</h1>
+        <p style={{ textAlign: 'center', color: '#666', marginBottom: '30px' }}>Play • Create • Challenge</p>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>Your Name</label>
         <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Enter your name" style={{ width: '100%', padding: '14px 18px', fontSize: '16px', border: '2px solid #e0e0e0', borderRadius: '12px', marginBottom: '25px', outline: 'none' }} />
-        <button onClick={handleCreateClick} style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 600, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '20px' }}>
+        <button onClick={handleCreateClick} style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 600, background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '20px' }}>
           Create New Room
         </button>
         <div style={{ textAlign: 'center', margin: '20px 0', color: '#999', position: 'relative' }}>
