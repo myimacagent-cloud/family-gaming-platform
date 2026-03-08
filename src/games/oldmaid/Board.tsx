@@ -65,7 +65,7 @@ export function OldMaidBoard({ state, mySymbol, myPlayerId, onMove, disabled }: 
                 height: 70,
                 borderRadius: 8,
                 border: '2px solid #cbd5e1',
-                background: myTurn ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : '#94a3b8',
+                background: myTurn ? 'linear-gradient(135deg,#5b6cff 0%, #8b5cf6 100%)' : '#94a3b8',
                 color: '#fff',
                 fontWeight: 800,
                 cursor: myTurn ? 'pointer' : 'default',
@@ -84,8 +84,10 @@ export function OldMaidBoard({ state, mySymbol, myPlayerId, onMove, disabled }: 
         <div style={{ fontWeight: 800, marginBottom: 8 }}>Your Hand</div>
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
           {myHand.map((c, i) => (
-            <div key={i} style={{ width: 48, height: 70, borderRadius: 8, border: '2px solid #cbd5e1', background: c === OLD_MAID ? '#ef4444' : '#fff', display: 'grid', placeItems: 'center', fontWeight: 900, color: c === OLD_MAID ? '#fff' : '#1f2937', flex: '0 0 auto' }}>
-              {rankLabel(c)}
+            <div key={i} style={{ width: 52, height: 76, borderRadius: 10, border: '2px solid #cbd5e1', background: c === OLD_MAID ? 'linear-gradient(160deg, #ef4444 0%, #b91c1c 100%)' : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)', display: 'grid', placeItems: 'center', fontWeight: 900, color: c === OLD_MAID ? '#fff' : '#1f2937', flex: '0 0 auto', boxShadow: '0 4px 10px rgba(15,23,42,0.16)', position: 'relative' }}>
+              <span style={{ position: 'absolute', top: 4, left: 5, fontSize: 10, opacity: 0.85 }}>{rankLabel(c)}</span>
+              <span style={{ fontSize: c === OLD_MAID ? 20 : 24 }}>{rankLabel(c)}</span>
+              <span style={{ position: 'absolute', bottom: 4, right: 5, fontSize: 10, transform: 'rotate(180deg)', opacity: 0.85 }}>{rankLabel(c)}</span>
             </div>
           ))}
           {myHand.length === 0 && <span style={{ color: '#64748b' }}>No cards</span>}
