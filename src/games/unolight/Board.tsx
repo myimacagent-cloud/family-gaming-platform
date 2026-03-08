@@ -145,7 +145,7 @@ export function UnoLightBoard({ state, mySymbol, myPlayerId, onMove, disabled }:
         <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 12, minWidth: 190, textAlign: 'center' }}>
           <div style={{ fontWeight: 800, marginBottom: 8 }}>Top Card</div>
           <div style={{ margin: '0 auto', width: 76, height: 110, borderRadius: 10, border: '2px solid #cbd5e1', background: top ? colorHex(top.color) : '#fff', display: 'grid', placeItems: 'center' }}>
-            <div style={{ color: '#fff', fontWeight: 900, fontSize: 28 }}>{top ? valueLabel(top.value) : '—'}</div>
+            <div style={{ color: '#fff', fontWeight: 900, fontSize: 38, fontFamily: "'Fredoka One', 'Baloo 2', 'Comic Sans MS', 'Trebuchet MS', sans-serif", letterSpacing: '0.6px', textShadow: '0 2px 6px rgba(0,0,0,0.28)' }}>{top ? valueLabel(top.value) : '—'}</div>
           </div>
           <div style={{ marginTop: 8, fontSize: 12, color: '#475569' }}>Active color: <strong>{state.activeColor || '—'}</strong></div>
         </div>
@@ -216,7 +216,17 @@ export function UnoLightBoard({ state, mySymbol, myPlayerId, onMove, disabled }:
                   transition: 'transform 170ms ease',
                 }}
               >
-                {valueLabel(p.value)}
+                <span
+                  style={{
+                    fontSize: 34,
+                    fontFamily: "'Fredoka One', 'Baloo 2', 'Comic Sans MS', 'Trebuchet MS', sans-serif",
+                    letterSpacing: '0.6px',
+                    lineHeight: 1,
+                    textShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  {valueLabel(p.value)}
+                </span>
               </button>
             );
           })}
