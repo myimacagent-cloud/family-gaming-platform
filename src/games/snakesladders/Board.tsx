@@ -39,7 +39,7 @@ export function SnakesLaddersBoard({ state, mySymbol, onMove, disabled }: Snakes
         </div>
       </div>
 
-      <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 10 }}>
+      <div style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(236,72,153,0.10) 50%, rgba(34,197,94,0.10) 100%)', borderRadius: 12, padding: 10 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4 }}>
           {Array.from({ length: 100 }, (_, i) => 100 - i).map((n) => {
             const isP1 = p1Pos === n;
@@ -50,7 +50,7 @@ export function SnakesLaddersBoard({ state, mySymbol, onMove, disabled }: Snakes
             const snakeTo = SNAKES.find(([, b]) => b === n);
 
             return (
-              <div key={n} style={{ minHeight: 28, borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700, position: 'relative', overflow: 'hidden' }}>
+              <div key={n} style={{ minHeight: 28, borderRadius: 6, background: n % 2 === 0 ? '#fef3c7' : '#dbeafe', border: '1px solid #cbd5e1', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700, position: 'relative', overflow: 'hidden' }}>
                 {n}
 
                 {ladderFrom && <div style={{ position: 'absolute', top: 1, left: 2, fontSize: 10 }}>🪜↑{ladderFrom[1]}</div>}
@@ -61,7 +61,7 @@ export function SnakesLaddersBoard({ state, mySymbol, onMove, disabled }: Snakes
 
                 {(isP1 || isP2) && (
                   <div style={{ position: 'absolute', bottom: 2, right: 2, fontSize: 11 }}>
-                    {isP1 ? '🔵' : ''}{isP2 ? '🩷' : ''}
+                    {isP1 ? '🔷' : ''}{isP2 ? '🟣' : ''}
                   </div>
                 )}
               </div>
@@ -71,7 +71,7 @@ export function SnakesLaddersBoard({ state, mySymbol, onMove, disabled }: Snakes
       </div>
 
       <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 10, padding: '8px 10px', fontSize: 12, color: '#334155' }}>
-        🪜 = ladder up • 🐍 = snake down
+        🪜 = ladder up • 🐍 = snake down • colorful board mode
       </div>
 
       <button onClick={roll} disabled={!myTurn} style={{ border: 'none', borderRadius: 10, padding: '10px 14px', background: myTurn ? '#6D7DFF' : '#94a3b8', color: '#fff', fontWeight: 800, cursor: myTurn ? 'pointer' : 'default' }}>
