@@ -142,6 +142,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends when one player has no cards left.',
     differences: 'Simplified family-friendly Crazy Eights (single-deck, draw-one turn flow).',
   },
+  unolight: {
+    howToPlay: 'Match the top card by color or value. Wild cards let you pick the next color.',
+    scoring: 'Round winner is first player to empty their hand.',
+    gameEnd: 'Ends as soon as one player has no cards left.',
+    differences: 'Custom Uno-style clone (Color Clash) with simplified 2-player room flow.',
+  },
 };
 
 type StatLine = {
