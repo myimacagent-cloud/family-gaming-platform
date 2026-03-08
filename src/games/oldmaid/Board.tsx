@@ -14,15 +14,22 @@ function rankLabel(rank: number): string {
   return String(rank);
 }
 
-export function OldMaidBoard({ state, mySymbol, onMove, disabled }: OldMaidBoardProps) {
+export function OldMaidBoard({ state, mySymbol, myPlayerId, onMove, disabled }: OldMaidBoardProps) {
+  const meById = state.players.find((p) => p.userId === myPlayerId);
+  const resolvedMySymbol = mySymbol || meById?.symbol || Object.keys(state.hands || {})[0] || '';
+  const oppSymbol = Object.keys(state.hands || {}).find((s) => s !== resolvedMySymbol) || '';
+
   const isFinished = state.status === 'finished' || state.status === 'draw';
-  const myTurn = state.currentPicker === mySymbol && !disabled && !isFinished;
+  const myTurn = state.currentPicker === resolvedMySymbol && !disabled && !isFinished;
 
-  const me = state.players.find((p) => p.symbol === mySymbol);
-  const opp = state.players.find((p) => p.symbol !== mySymbol);
+  const me = state.players.find((p) => p.symbol === resolvedMySymbol) || meById;
+  const opp = state.players.find((p) => p.symbol === oppSymbol) || state.players.find((p) => p.symbol !== resolvedMySymbol);
 
-  const myHand = state.hands?.[mySymbol] || [];
-  const oppHand = opp ? state.hands?.[opp.symbol] || [] : [];
+  const myHand = state.hands?.[resolvedMySymbol] || [];
+  const oppHand = oppSymbol ? state.hands?.[oppSymbol] || [] : [];
+
+  const myPairs = state.pairs?.[resolvedMySymbol] ?? 0;
+  const oppPairs = oppSymbol ? state.pairs?.[oppSymbol] ?? 0 : 0;
 
   const drawFromOpp = (index: number) => {
     if (!myTurn) return;
@@ -32,6 +39,15 @@ export function OldMaidBoard({ state, mySymbol, onMove, disabled }: OldMaidBoard
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 'min(900px, calc(100vw - 24px))' }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', fontWeight: 800 }}>
+          🔵 {me?.displayName ?? 'You'} pairs: {myPairs}
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', fontWeight: 800 }}>
+          🩷 {opp?.displayName ?? 'Opponent'} pairs: {oppPairs}
+        </div>
+      </div>
+
       <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#334155' }}>
         {state.lastAction}
       </div>
@@ -78,7 +94,7 @@ export function OldMaidBoard({ state, mySymbol, onMove, disabled }: OldMaidBoard
 
       <div style={{ fontSize: 13, color: 'white', fontWeight: 700 }}>
         {isFinished
-          ? state.winner === mySymbol
+          ? state.winner === resolvedMySymbol
             ? '🏆 You win!'
             : 'You got the Old Maid 😅'
           : myTurn

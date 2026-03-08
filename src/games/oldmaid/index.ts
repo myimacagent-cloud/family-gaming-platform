@@ -20,11 +20,18 @@ function makeDeck(): number[] {
   return deck;
 }
 
-function removePairs(hand: number[]): number[] {
+function removePairs(hand: number[]): { hand: number[]; pairsMade: number } {
   const counts: Record<number, number> = {};
   for (const c of hand) counts[c] = (counts[c] || 0) + 1;
 
   const out: number[] = [];
+  let pairsMade = 0;
+  for (const [rankText, count] of Object.entries(counts)) {
+    const rank = Number(rankText);
+    if (rank === OLD_MAID) continue;
+    pairsMade += Math.floor(count / 2);
+  }
+
   for (const c of hand) {
     if (c === OLD_MAID) {
       out.push(c);
@@ -35,7 +42,8 @@ function removePairs(hand: number[]): number[] {
       counts[c] = 0;
     }
   }
-  return out;
+
+  return { hand: out, pairsMade };
 }
 
 function firstNonEmpty(state: OldMaidState): string | null {
@@ -51,12 +59,7 @@ function pickTarget(state: OldMaidState, picker: string): string | null {
   return (state.hands[other] || []).length > 0 ? other : null;
 }
 
-function ensurePrepared(state: OldMaidState): OldMaidState {
-  if (state.players.length < 2) return state;
-  const a = state.players[0].symbol;
-  const b = state.players[1].symbol;
-  if ((state.hands[a]?.length ?? 0) > 0 || (state.hands[b]?.length ?? 0) > 0) return state;
-
+function dealForSymbols(a: string, b: string): Pick<OldMaidState, 'hands' | 'pairs' | 'maidHolder' | 'currentPicker' | 'currentTarget' | 'lastAction'> {
   const deck = makeDeck();
   const hands: Record<string, number[]> = { [a]: [], [b]: [] };
   let turn = 0;
@@ -65,18 +68,37 @@ function ensurePrepared(state: OldMaidState): OldMaidState {
     turn++;
   }
 
-  hands[a] = removePairs(hands[a]);
-  hands[b] = removePairs(hands[b]);
+  const aPairs = removePairs(hands[a]);
+  const bPairs = removePairs(hands[b]);
+  hands[a] = aPairs.hand;
+  hands[b] = bPairs.hand;
 
-  const picker = firstNonEmpty({ ...state, hands });
-  const target = picker ? pickTarget({ ...state, hands }, picker) : null;
+  return {
+    hands,
+    pairs: { [a]: aPairs.pairsMade, [b]: bPairs.pairsMade },
+    maidHolder: hands[a].includes(OLD_MAID) ? a : hands[b].includes(OLD_MAID) ? b : null,
+    currentPicker: a,
+    currentTarget: b,
+    lastAction: 'Cards dealt. Draw from opponent and make pairs.',
+  };
+}
+
+function ensurePrepared(state: OldMaidState): OldMaidState {
+  if (state.players.length < 2) return state;
+  const a = state.players[0].symbol;
+  const b = state.players[1].symbol;
+  if ((state.hands[a]?.length ?? 0) > 0 || (state.hands[b]?.length ?? 0) > 0) return state;
+
+  const dealt = dealForSymbols(a, b);
+  const picker = firstNonEmpty({ ...state, hands: dealt.hands });
+  const target = picker ? pickTarget({ ...state, hands: dealt.hands }, picker) : null;
 
   return {
     ...state,
     deck: [],
-    hands,
-    maidHolder:
-      hands[a].includes(OLD_MAID) ? a : hands[b].includes(OLD_MAID) ? b : null,
+    hands: dealt.hands,
+    pairs: dealt.pairs,
+    maidHolder: dealt.maidHolder,
     currentPicker: picker,
     currentTarget: target,
     currentPlayerIndex: Math.max(0, state.players.findIndex((p) => p.symbol === picker)),
@@ -100,6 +122,7 @@ function resolveEnd(state: OldMaidState): OldMaidState {
 }
 
 function createInitialState(_roomCode: string): OldMaidState {
+  const dealt = dealForSymbols('X', 'O');
   return {
     gameType: GAME_ID,
     players: [],
@@ -107,10 +130,11 @@ function createInitialState(_roomCode: string): OldMaidState {
     winner: null,
     currentPlayerIndex: 0,
     deck: [],
-    hands: {},
-    maidHolder: null,
-    currentPicker: null,
-    currentTarget: null,
+    hands: dealt.hands,
+    pairs: dealt.pairs,
+    maidHolder: dealt.maidHolder,
+    currentPicker: dealt.currentPicker,
+    currentTarget: dealt.currentTarget,
     lastAction: 'Match pairs and avoid the Old Maid!',
   };
 }
@@ -118,18 +142,21 @@ function createInitialState(_roomCode: string): OldMaidState {
 function createRestartState(currentState: OldMaidState): OldMaidState {
   const a = currentState.players[0]?.symbol || 'X';
   const b = currentState.players[1]?.symbol || 'O';
-  return ensurePrepared({
+  const dealt = dealForSymbols(a, b);
+
+  return {
     ...currentState,
     status: 'active',
     winner: null,
     currentPlayerIndex: 0,
     deck: [],
-    hands: { [a]: [], [b]: [] },
-    maidHolder: null,
-    currentPicker: null,
-    currentTarget: null,
-    lastAction: 'New game started.',
-  });
+    hands: dealt.hands,
+    pairs: dealt.pairs,
+    maidHolder: dealt.maidHolder,
+    currentPicker: dealt.currentPicker,
+    currentTarget: dealt.currentTarget,
+    lastAction: 'New game started. Cards dealt.',
+  };
 }
 
 function validateMove(inputState: OldMaidState, move: OldMaidMove, playerSymbol: string): MoveValidation {
@@ -155,13 +182,19 @@ function applyMove(inputState: OldMaidState, move: OldMaidMove, playerSymbol: st
     [playerSymbol]: [...(state.hands[playerSymbol] || [])],
     [target]: [...(state.hands[target] || [])],
   };
+  const pairs = { ...state.pairs };
 
   const [drawn] = hands[target].splice(move.index, 1);
   if (typeof drawn !== 'number') return state;
   hands[playerSymbol].push(drawn);
 
-  hands[playerSymbol] = removePairs(hands[playerSymbol]);
-  hands[target] = removePairs(hands[target]);
+  const curRes = removePairs(hands[playerSymbol]);
+  hands[playerSymbol] = curRes.hand;
+  pairs[playerSymbol] = (pairs[playerSymbol] || 0) + curRes.pairsMade;
+
+  const oppRes = removePairs(hands[target]);
+  hands[target] = oppRes.hand;
+  pairs[target] = (pairs[target] || 0) + oppRes.pairsMade;
 
   const maidHolder =
     hands[playerSymbol].includes(OLD_MAID) ? playerSymbol :
@@ -175,6 +208,7 @@ function applyMove(inputState: OldMaidState, move: OldMaidMove, playerSymbol: st
   state = {
     ...state,
     hands,
+    pairs,
     maidHolder,
     currentPicker: nextPicker,
     currentTarget: nextTarget,
