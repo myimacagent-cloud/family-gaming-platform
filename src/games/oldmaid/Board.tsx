@@ -1,0 +1,96 @@
+import type { GameBoardProps } from '../types';
+import type { OldMaidState, OldMaidMove } from './types';
+
+interface OldMaidBoardProps extends GameBoardProps<OldMaidState> {}
+
+const OLD_MAID = 99;
+
+function rankLabel(rank: number): string {
+  if (rank === OLD_MAID) return '🧙‍♀️';
+  if (rank === 1) return 'A';
+  if (rank === 11) return 'J';
+  if (rank === 12) return 'Q';
+  if (rank === 13) return 'K';
+  return String(rank);
+}
+
+export function OldMaidBoard({ state, mySymbol, onMove, disabled }: OldMaidBoardProps) {
+  const isFinished = state.status === 'finished' || state.status === 'draw';
+  const myTurn = state.currentPicker === mySymbol && !disabled && !isFinished;
+
+  const me = state.players.find((p) => p.symbol === mySymbol);
+  const opp = state.players.find((p) => p.symbol !== mySymbol);
+
+  const myHand = state.hands?.[mySymbol] || [];
+  const oppHand = opp ? state.hands?.[opp.symbol] || [] : [];
+
+  const drawFromOpp = (index: number) => {
+    if (!myTurn) return;
+    const move: OldMaidMove = { type: 'draw_from_opponent', index };
+    onMove(move);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 'min(900px, calc(100vw - 24px))' }}>
+      <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#334155' }}>
+        {state.lastAction}
+      </div>
+
+      <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 12 }}>
+        <div style={{ fontWeight: 800, marginBottom: 8 }}>Opponent Hand (tap a card to draw)</div>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
+          {oppHand.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => drawFromOpp(i)}
+              disabled={!myTurn}
+              style={{
+                width: 48,
+                height: 70,
+                borderRadius: 8,
+                border: '2px solid #cbd5e1',
+                background: myTurn ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : '#94a3b8',
+                color: '#fff',
+                fontWeight: 800,
+                cursor: myTurn ? 'pointer' : 'default',
+                flex: '0 0 auto',
+              }}
+              title={myTurn ? 'Draw this card' : 'Wait for your turn'}
+            >
+              🎴
+            </button>
+          ))}
+          {oppHand.length === 0 && <span style={{ color: '#64748b' }}>No cards</span>}
+        </div>
+      </div>
+
+      <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 12 }}>
+        <div style={{ fontWeight: 800, marginBottom: 8 }}>Your Hand</div>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
+          {myHand.map((c, i) => (
+            <div key={i} style={{ width: 48, height: 70, borderRadius: 8, border: '2px solid #cbd5e1', background: c === OLD_MAID ? '#ef4444' : '#fff', display: 'grid', placeItems: 'center', fontWeight: 900, color: c === OLD_MAID ? '#fff' : '#1f2937', flex: '0 0 auto' }}>
+              {rankLabel(c)}
+            </div>
+          ))}
+          {myHand.length === 0 && <span style={{ color: '#64748b' }}>No cards</span>}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 13, color: 'white', fontWeight: 700 }}>
+        {isFinished
+          ? state.winner === mySymbol
+            ? '🏆 You win!'
+            : 'You got the Old Maid 😅'
+          : myTurn
+            ? 'Your turn: draw from opponent'
+            : `Waiting for ${opp?.displayName ?? 'opponent'}`}
+      </div>
+
+      <div style={{ fontSize: 12, color: 'white', opacity: 0.95 }}>
+        {me?.displayName ?? 'You'} cards: {myHand.length} • {opp?.displayName ?? 'Opponent'} cards: {oppHand.length}
+      </div>
+    </div>
+  );
+}
+
+export default OldMaidBoard;

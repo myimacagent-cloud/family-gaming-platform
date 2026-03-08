@@ -154,6 +154,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends when both players are done (stood or busted).',
     differences: 'PvP showdown version (no dealer hand).',
   },
+  oldmaid: {
+    howToPlay: 'Take turns drawing a random card from opponent hand.',
+    scoring: 'No points; objective is to avoid ending with the Old Maid.',
+    gameEnd: 'Ends when one player is left holding the Old Maid card.',
+    differences: 'Fast 2-player online version with auto pair removal.',
+  },
 };
 
 type StatLine = {
