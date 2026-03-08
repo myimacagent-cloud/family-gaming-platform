@@ -36,34 +36,68 @@ function canPlay(card: string, topCard: string | null, activeColor: Color | null
   return c.color === activeColor || c.value === top.value;
 }
 
-export function UnoLightBoard({ state, mySymbol, onMove, disabled }: UnoLightBoardProps) {
+function CardBack() {
+  return (
+    <div
+      style={{
+        width: 46,
+        height: 66,
+        borderRadius: 8,
+        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+        border: '2px solid rgba(255,255,255,0.75)',
+        boxShadow: '0 3px 8px rgba(15,23,42,0.25)',
+        display: 'grid',
+        placeItems: 'center',
+      }}
+    >
+      <span style={{ color: '#fff', fontWeight: 800, fontSize: 12 }}>🎴</span>
+    </div>
+  );
+}
+
+export function UnoLightBoard({ state, mySymbol, myPlayerId, onMove, disabled }: UnoLightBoardProps) {
   const isFinished = state.status === 'finished' || state.status === 'draw';
-  const myTurn = state.players[state.currentPlayerIndex]?.symbol === mySymbol && !disabled && !isFinished;
 
-  const me = state.players.find((p) => p.symbol === mySymbol);
-  const opp = state.players.find((p) => p.symbol !== mySymbol);
+  const meById = state.players.find((p) => p.userId === myPlayerId);
+  const resolvedMySymbol = mySymbol || meById?.symbol || Object.keys(state.hands || {})[0] || '';
+  const me = state.players.find((p) => p.symbol === resolvedMySymbol) || meById;
+  const opp = state.players.find((p) => p.symbol !== resolvedMySymbol);
+  const oppSymbol = opp?.symbol || Object.keys(state.hands || {}).find((k) => k !== resolvedMySymbol) || '';
 
-  const myHand = state.hands?.[mySymbol] || [];
-  const oppCount = opp ? state.hands?.[opp.symbol]?.length ?? 0 : 0;
+  const myTurn = state.players[state.currentPlayerIndex]?.symbol === resolvedMySymbol && !disabled && !isFinished;
+
+  const myHand = state.hands?.[resolvedMySymbol] || [];
+  const oppCount = oppSymbol ? state.hands?.[oppSymbol]?.length ?? 0 : 0;
 
   const [wildColor, setWildColor] = useState<Color>('R');
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
 
-  const playable = useMemo(() => new Set(myHand.filter((c) => canPlay(c, state.topCard, state.activeColor))), [myHand, state.topCard, state.activeColor]);
+  const playable = useMemo(
+    () => new Set(myHand.filter((c) => canPlay(c, state.topCard, state.activeColor as Color | null))),
+    [myHand, state.topCard, state.activeColor]
+  );
 
-  const playCard = (card: string) => {
-    if (!myTurn) return;
-    const p = parseCard(card);
+  const selectCard = (card: string) => {
+    if (!myTurn || !playable.has(card)) return;
+    setSelectedCard((prev) => (prev === card ? null : card));
+  };
+
+  const confirmPlay = () => {
+    if (!myTurn || !selectedCard) return;
+    const p = parseCard(selectedCard);
     const move: UnoLightMove = {
       type: 'play',
-      card,
+      card: selectedCard,
       chooseColor: p.color === 'W' ? wildColor : undefined,
     };
     onMove(move);
+    setSelectedCard(null);
   };
 
   const drawCard = () => {
     if (!myTurn) return;
     onMove({ type: 'draw' });
+    setSelectedCard(null);
   };
 
   const top = state.topCard ? parseCard(state.topCard) : null;
@@ -81,6 +115,32 @@ export function UnoLightBoard({ state, mySymbol, onMove, disabled }: UnoLightBoa
         {state.lastAction}
       </div>
 
+      <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 10, width: '100%' }}>
+        <div style={{ fontWeight: 800, marginBottom: 8, color: '#334155' }}>Opponent Backhand</div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', minHeight: 78, overflowX: 'auto', padding: '2px 4px 4px' }}>
+          {Array.from({ length: oppCount }).map((_, i) => {
+            const mid = (oppCount - 1) / 2;
+            const offset = i - mid;
+            const angle = Math.max(-16, Math.min(16, offset * 4));
+            const lift = Math.max(0, 7 - Math.abs(offset) * 2);
+            return (
+              <div
+                key={i}
+                style={{
+                  flex: '0 0 auto',
+                  marginLeft: i === 0 ? 0 : -16,
+                  transform: `rotate(${angle}deg) translateY(${-lift}px)`,
+                  transformOrigin: 'bottom center',
+                }}
+              >
+                <CardBack />
+              </div>
+            );
+          })}
+          {oppCount === 0 && <span style={{ color: '#64748b' }}>No cards</span>}
+        </div>
+      </div>
+
       <div style={{ display: 'flex', gap: 12, width: '100%', flexWrap: 'wrap', justifyContent: 'center' }}>
         <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 12, minWidth: 190, textAlign: 'center' }}>
           <div style={{ fontWeight: 800, marginBottom: 8 }}>Top Card</div>
@@ -90,8 +150,8 @@ export function UnoLightBoard({ state, mySymbol, onMove, disabled }: UnoLightBoa
           <div style={{ marginTop: 8, fontSize: 12, color: '#475569' }}>Active color: <strong>{state.activeColor || '—'}</strong></div>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 12, minWidth: 260 }}>
-          <div style={{ fontWeight: 800, marginBottom: 8 }}>Wild Color</div>
+        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 12, minWidth: 280 }}>
+          <div style={{ fontWeight: 800, marginBottom: 8 }}>Actions</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
             {(['R', 'G', 'B', 'Y'] as Color[]).map((c) => (
               <button
@@ -108,40 +168,52 @@ export function UnoLightBoard({ state, mySymbol, onMove, disabled }: UnoLightBoa
               />
             ))}
           </div>
-          <button
-            onClick={drawCard}
-            disabled={!myTurn}
-            style={{ border: 'none', borderRadius: 10, padding: '10px 14px', background: myTurn ? '#6D7DFF' : '#94a3b8', color: '#fff', fontWeight: 800, cursor: myTurn ? 'pointer' : 'default' }}
-          >
-            Draw Card
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              onClick={confirmPlay}
+              disabled={!myTurn || !selectedCard}
+              style={{ border: 'none', borderRadius: 10, padding: '10px 14px', background: myTurn && selectedCard ? '#16a34a' : '#94a3b8', color: '#fff', fontWeight: 800, cursor: myTurn && selectedCard ? 'pointer' : 'default' }}
+            >
+              ✅ Confirm Play
+            </button>
+            <button
+              onClick={drawCard}
+              disabled={!myTurn}
+              style={{ border: 'none', borderRadius: 10, padding: '10px 14px', background: myTurn ? '#6D7DFF' : '#94a3b8', color: '#fff', fontWeight: 800, cursor: myTurn ? 'pointer' : 'default' }}
+            >
+              Draw Card
+            </button>
+          </div>
           <div style={{ marginTop: 8, fontSize: 12, color: '#475569' }}>{myTurn ? 'Your turn' : 'Waiting for opponent'}</div>
         </div>
       </div>
 
       <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 14, padding: 14, width: '100%' }}>
-        <div style={{ fontWeight: 800, marginBottom: 10, color: '#334155' }}>Your Hand</div>
+        <div style={{ fontWeight: 800, marginBottom: 10, color: '#334155' }}>Your Hand (tap to select)</div>
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
           {myHand.length === 0 && <span style={{ color: '#64748b' }}>No cards in hand</span>}
           {myHand.map((card, i) => {
             const p = parseCard(card);
             const isPlayable = playable.has(card);
+            const isSelected = selectedCard === card;
             return (
               <button
                 key={`${card}-${i}`}
-                onClick={() => playCard(card)}
+                onClick={() => selectCard(card)}
                 disabled={!myTurn || !isPlayable}
                 style={{
                   width: 62,
                   height: 90,
                   flex: '0 0 auto',
                   borderRadius: 10,
-                  border: isPlayable ? '2px solid #6D7DFF' : '2px solid #cbd5e1',
+                  border: isSelected ? '3px solid #16a34a' : isPlayable ? '2px solid #6D7DFF' : '2px solid #cbd5e1',
                   background: p.color === 'W' ? 'linear-gradient(135deg,#ef4444 0%, #22c55e 33%, #3b82f6 66%, #eab308 100%)' : colorHex(p.color),
                   color: '#fff',
                   fontWeight: 900,
                   cursor: myTurn && isPlayable ? 'pointer' : 'default',
                   opacity: isPlayable ? 1 : 0.58,
+                  transform: isSelected ? 'translateY(-8px) scale(1.05) rotate(-2deg)' : 'none',
+                  transition: 'transform 170ms ease',
                 }}
               >
                 {valueLabel(p.value)}
