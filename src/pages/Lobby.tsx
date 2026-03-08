@@ -138,12 +138,17 @@ export default function Lobby() {
                   <div
                     style={{
                       fontWeight: 700,
-                      fontSize: '14px',
+                      fontSize: '13px',
                       color: '#222',
                       marginBottom: '6px',
-                      whiteSpace: 'nowrap',
+                      lineHeight: 1.25,
+                      whiteSpace: 'normal',
+                      overflowWrap: 'anywhere',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      minHeight: '48px',
                     }}
                     title={game.displayName}
                   >
