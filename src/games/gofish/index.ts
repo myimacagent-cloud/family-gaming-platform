@@ -16,14 +16,6 @@ function shuffledDeck(): number[] {
   return deck;
 }
 
-function rankLabel(rank: number): string {
-  if (rank === 11) return 'J';
-  if (rank === 12) return 'Q';
-  if (rank === 13) return 'K';
-  if (rank === 14) return 'A';
-  return String(rank);
-}
-
 function drawCards(deck: number[], count: number): number[] {
   const drawn: number[] = [];
   for (let i = 0; i < count; i++) {
@@ -187,7 +179,7 @@ function applyMove(inputState: GoFishState, move: GoFishMove, playerSymbol: stri
   if (taken.length > 0) {
     hands[playerSymbol].push(...taken);
     keepTurn = true;
-    lastAction = `${state.players.find(p => p.symbol === playerSymbol)?.displayName || 'Player'} took ${taken.length} ${rankLabel(requested)}(s)!`;
+    lastAction = `${state.players.find(p => p.symbol === playerSymbol)?.displayName || 'Player'} got cards and keeps the turn.`;
   } else {
     const drawn = deck.shift();
     if (typeof drawn === 'number') {
@@ -195,8 +187,8 @@ function applyMove(inputState: GoFishState, move: GoFishMove, playerSymbol: stri
       const lucky = drawn === requested;
       keepTurn = lucky;
       lastAction = lucky
-        ? `Go Fish! Drew ${rankLabel(drawn)} — lucky! Go again.`
-        : `Go Fish! Drew ${rankLabel(drawn)}.`;
+        ? 'Go Fish! Lucky draw — go again.'
+        : 'Go Fish! Card drawn.';
     } else {
       keepTurn = false;
       lastAction = 'Go Fish! Deck is empty.';
