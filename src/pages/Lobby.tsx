@@ -18,6 +18,7 @@ const GAME_EMOJIS: Record<string, string> = {
   marblesevenodd: '⚪🔢',
   battleship: '🚢💥',
   checkers: '🔴⚫',
+  airhockey: '🏒🥅',
 };
 
 function safeGetStorage(key: string): string | null {
