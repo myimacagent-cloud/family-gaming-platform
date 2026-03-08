@@ -116,6 +116,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends when all books are formed / no playable cards remain.',
     differences: 'Privacy-safe action text and card-visual UI for room play.',
   },
+  crazyeights: {
+    howToPlay: 'On your turn, play a card matching rank or active suit. 8s are wild and let you choose the next suit.',
+    scoring: 'First player to empty their hand wins the round.',
+    gameEnd: 'Ends when one player has no cards left.',
+    differences: 'Simplified family-friendly Crazy Eights (single-deck, draw-one turn flow).',
+  },
 };
 
 type StatLine = {

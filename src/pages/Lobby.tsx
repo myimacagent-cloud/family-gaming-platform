@@ -21,6 +21,7 @@ const GAME_EMOJIS: Record<string, string> = {
   airhockey: '🏒🥅',
   war: '🃏⚔️',
   gofish: '🐟🃏',
+  crazyeights: '8️⃣🃏',
 };
 
 function safeGetStorage(key: string): string | null {

@@ -14,6 +14,7 @@ import { checkersGame } from './checkers';
 import { airHockeyGame } from './airhockey';
 import { warGame } from './war';
 import { goFishGame } from './gofish';
+import { crazyEightsGame } from './crazyeights';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -32,6 +33,7 @@ export const gameRegistry: GameRegistry = {
   [airHockeyGame.id]: airHockeyGame,
   [warGame.id]: warGame,
   [goFishGame.id]: goFishGame,
+  [crazyEightsGame.id]: crazyEightsGame,
 };
 
 // Helper functions
