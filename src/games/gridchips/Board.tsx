@@ -13,8 +13,8 @@ export function GridChipsBoard({ state, mySymbol, onMove, disabled }: GridChipsB
 
   const colorFor = (symbol: string | null) => {
     if (!symbol) return '#e2e8f0';
-    if (symbol === p1?.symbol) return '#22d3ee';
-    if (symbol === p2?.symbol) return '#f472b6';
+    if (symbol === p1?.symbol) return '#3b82f6';
+    if (symbol === p2?.symbol) return '#ec4899';
     return '#a78bfa';
   };
 
@@ -28,13 +28,39 @@ export function GridChipsBoard({ state, mySymbol, onMove, disabled }: GridChipsB
 
   const dotView = (dots: number) => {
     if (dots <= 0) return null;
-    return <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(15,23,42,0.9)' }}>{dots}</span>;
+
+    return (
+      <div
+        style={{
+          width: '72%',
+          height: '72%',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignContent: 'center',
+          justifyContent: 'center',
+          gap: 3,
+        }}
+      >
+        {Array.from({ length: dots }).map((_, i) => (
+          <span
+            key={i}
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.95)',
+              boxShadow: '0 0 0 1px rgba(15,23,42,0.08)',
+            }}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
       <div style={{ display: 'flex', gap: 14, background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', fontWeight: 700 }}>
-        <span style={{ color: '#0891b2' }}>🩵 {p1?.displayName ?? 'P1'}</span>
+        <span style={{ color: '#2563eb' }}>🔵 {p1?.displayName ?? 'P1'}</span>
         <span style={{ color: '#db2777' }}>🩷 {p2?.displayName ?? 'P2'}</span>
       </div>
 
