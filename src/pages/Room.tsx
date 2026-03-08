@@ -208,6 +208,15 @@ export default function Room() {
   const rulesInfo = gameType ? GAME_RULES[gameType] : undefined;
   const theme = THEME_PALETTES[themeKey] || THEME_PALETTES.pixelPop;
 
+  const boardThemeStyle = {
+    background:
+      themeKey === 'nightNeon'
+        ? 'linear-gradient(160deg, rgba(17,24,39,0.86) 0%, rgba(79,70,229,0.22) 100%)'
+        : `linear-gradient(160deg, rgba(255,255,255,0.92) 0%, ${theme.accent2}22 100%)`,
+    border: `2px solid ${theme.accent}66`,
+    boxShadow: `0 12px 30px ${theme.accent}33`,
+  } as const;
+
   const roomLink = useMemo(() => {
     if (!roomCode) return '';
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -402,13 +411,24 @@ export default function Room() {
         )}
 
         {roomState && gameDefinition && GameBoardComponent && (
-          <GameBoardComponent
-            state={roomState as any}
-            myPlayerId={userId}
-            mySymbol={currentPlayer?.symbol || ''}
-            onMove={handleMakeMove}
-            disabled={connectionState !== 'connected'}
-          />
+          <div
+            style={{
+              ...boardThemeStyle,
+              borderRadius: 18,
+              padding: 12,
+              width: 'min(980px, calc(100vw - 26px))',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <GameBoardComponent
+              state={roomState as any}
+              myPlayerId={userId}
+              mySymbol={currentPlayer?.symbol || ''}
+              onMove={handleMakeMove}
+              disabled={connectionState !== 'connected'}
+            />
+          </div>
         )}
 
         {roomState && !gameDefinition && (
