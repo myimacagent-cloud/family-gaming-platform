@@ -25,6 +25,7 @@ const GAME_EMOJIS: Record<string, string> = {
   unolight: '🎴🌈',
   blackjack: '🂡🃏',
   oldmaid: '🃏🧙‍♀️',
+  snakesladders: '🐍🪜',
 };
 
 function safeGetStorage(key: string): string | null {

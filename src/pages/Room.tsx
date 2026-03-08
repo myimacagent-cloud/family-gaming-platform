@@ -160,6 +160,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends when one player is left holding the Old Maid card.',
     differences: 'Fast 2-player online version with auto pair removal.',
   },
+  snakesladders: {
+    howToPlay: 'Roll the die and move forward. Ladders move you up, snakes move you down.',
+    scoring: 'No points; race to reach square 100 first.',
+    gameEnd: 'Ends when a player reaches square 100.',
+    differences: 'Quick online 2-player version with instant auto-roll movement.',
+  },
 };
 
 type StatLine = {
