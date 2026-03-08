@@ -26,33 +26,45 @@ export function GridChipsBoard({ state, mySymbol, onMove, disabled }: GridChipsB
     onMove(move);
   };
 
-  const dotView = (dots: number) => {
-    if (dots <= 0) return null;
+  const dotView = (dots: number, owner: string | null) => {
+    if (dots <= 0 || !owner) return null;
+
+    const tokenColor = owner === p1?.symbol ? '#3b82f6' : '#ec4899';
 
     return (
       <div
         style={{
-          width: '72%',
-          height: '72%',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignContent: 'center',
-          justifyContent: 'center',
-          gap: 3,
+          width: '74%',
+          height: '74%',
+          borderRadius: '50%',
+          background: tokenColor,
+          display: 'grid',
+          placeItems: 'center',
+          boxShadow: '0 6px 12px rgba(0,0,0,0.18)',
         }}
       >
-        {Array.from({ length: dots }).map((_, i) => (
-          <span
-            key={i}
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.95)',
-              boxShadow: '0 0 0 1px rgba(15,23,42,0.08)',
-            }}
-          />
-        ))}
+        <div
+          style={{
+            width: '62%',
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          {Array.from({ length: dots }).map((_, i) => (
+            <span
+              key={i}
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: '#ffffff',
+              }}
+            />
+          ))}
+        </div>
       </div>
     );
   };
@@ -112,7 +124,7 @@ export function GridChipsBoard({ state, mySymbol, onMove, disabled }: GridChipsB
               }}
               aria-label={`Cell ${i + 1}`}
             >
-              {dotView(cell.dots)}
+              {dotView(cell.dots, cell.owner)}
             </button>
           );
         })}
