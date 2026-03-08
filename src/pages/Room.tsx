@@ -32,6 +32,10 @@ const THEME_PALETTES: Record<string, ThemePalette> = {
   mintBlast: { name: 'Mint Blast', bg: 'linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%)', accent: '#00A896', accent2: '#00B4D8', textOnAccent: '#ffffff' },
   sunsetArcade: { name: 'Sunset Arcade', bg: 'linear-gradient(135deg, #FF7A59 0%, #FF4D8D 100%)', accent: '#FF5A5F', accent2: '#FF4D8D', textOnAccent: '#ffffff' },
   nightNeon: { name: 'Night Neon', bg: 'linear-gradient(135deg, #111827 0%, #312E81 100%)', accent: '#4F46E5', accent2: '#7C3AED', textOnAccent: '#ffffff' },
+  candyCloud: { name: 'Candy Cloud', bg: 'linear-gradient(135deg, #FF9ECF 0%, #FFD166 100%)', accent: '#FF5FA2', accent2: '#FFC145', textOnAccent: '#ffffff' },
+  oceanArc: { name: 'Ocean Arc', bg: 'linear-gradient(135deg, #0EA5E9 0%, #22C55E 100%)', accent: '#0284C7', accent2: '#16A34A', textOnAccent: '#ffffff' },
+  magmaRush: { name: 'Magma Rush', bg: 'linear-gradient(135deg, #F97316 0%, #DC2626 100%)', accent: '#EA580C', accent2: '#B91C1C', textOnAccent: '#ffffff' },
+  forestQuest: { name: 'Forest Quest', bg: 'linear-gradient(135deg, #14532D 0%, #4D7C0F 100%)', accent: '#166534', accent2: '#65A30D', textOnAccent: '#ffffff' },
 };
 
 type RulesInfo = {
