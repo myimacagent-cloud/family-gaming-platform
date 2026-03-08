@@ -289,6 +289,19 @@ export default function Room() {
           Leave Room
         </button>
       </div>
+
+      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
+        <img
+          src={pixelPlaygroundLogo}
+          alt="Pixel Playground"
+          style={{
+            width: 'min(260px, 70vw)',
+            opacity: 0.95,
+            filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.25))',
+          }}
+        />
+      </div>
+
     </div>
   );
 }
