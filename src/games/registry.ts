@@ -5,6 +5,7 @@ import { hangmanGame } from './hangman';
 import { chessGameDefinition } from './chess';
 import { rockPaperScissorsGame } from './rockpaperscissors';
 import { dotsAndBoxesGame } from './dotsandboxes';
+import { colorWarsGame } from './colorwars';
 import { connectFourGame } from './connectfour';
 import { memoryGame } from './memory';
 import { marblesEvenOddGame } from './marblesevenodd';
@@ -20,6 +21,7 @@ export const gameRegistry: GameRegistry = {
   [chessGameDefinition.id]: chessGameDefinition,
   [rockPaperScissorsGame.id]: rockPaperScissorsGame,
   [dotsAndBoxesGame.id]: dotsAndBoxesGame,
+  [colorWarsGame.id]: colorWarsGame,
   [connectFourGame.id]: connectFourGame,
   [memoryGame.id]: memoryGame,
   [marblesEvenOddGame.id]: marblesEvenOddGame,
