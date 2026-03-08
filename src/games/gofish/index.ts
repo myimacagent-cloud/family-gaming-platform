@@ -85,6 +85,29 @@ function ensurePrepared(state: GoFishState): GoFishState {
   };
 }
 
+
+function dealForSymbols(first: string, second: string): Pick<GoFishState, 'deck' | 'hands' | 'books' | 'lastAction'> {
+  const deck = shuffledDeck();
+  const firstHand = drawCards(deck, 7);
+  const secondHand = drawCards(deck, 7);
+
+  const firstBooks = removeBooks(firstHand);
+  const secondBooks = removeBooks(secondHand);
+
+  return {
+    deck,
+    hands: {
+      [first]: firstBooks.hand,
+      [second]: secondBooks.hand,
+    },
+    books: {
+      [first]: firstBooks.booksMade,
+      [second]: secondBooks.booksMade,
+    },
+    lastAction: 'Cards dealt. Ask for a rank in your hand!',
+  };
+}
+
 function refillIfEmpty(hand: number[], deck: number[]): number[] {
   if (hand.length > 0) return hand;
   const c = deck.shift();
@@ -92,32 +115,35 @@ function refillIfEmpty(hand: number[], deck: number[]): number[] {
 }
 
 function createInitialState(_roomCode: string): GoFishState {
+  const dealt = dealForSymbols('X', 'O');
   return {
     gameType: GAME_ID,
     players: [],
     status: 'waiting',
     winner: null,
     currentPlayerIndex: 0,
-    deck: [],
-    hands: {},
-    books: {},
-    lastAction: 'Start by asking for a rank in your hand.',
+    deck: dealt.deck,
+    hands: dealt.hands,
+    books: dealt.books,
+    lastAction: dealt.lastAction,
   };
 }
 
 function createRestartState(currentState: GoFishState): GoFishState {
   const p1 = currentState.players[0]?.symbol || 'X';
   const p2 = currentState.players[1]?.symbol || 'O';
-  return ensurePrepared({
+  const dealt = dealForSymbols(p1, p2);
+
+  return {
     ...currentState,
     status: 'active',
     winner: null,
     currentPlayerIndex: 0,
-    deck: [],
-    hands: { [p1]: [], [p2]: [] },
-    books: { [p1]: 0, [p2]: 0 },
-    lastAction: 'New game started!',
-  });
+    deck: dealt.deck,
+    hands: dealt.hands,
+    books: dealt.books,
+    lastAction: 'New game started! Cards dealt.',
+  };
 }
 
 function validateMove(inputState: GoFishState, move: GoFishMove, playerSymbol: string): MoveValidation {
