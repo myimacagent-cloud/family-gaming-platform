@@ -1,12 +1,10 @@
 import type { GameDefinition, GameRegistry } from './types';
-import { gridChipsGame } from './gridchips';
 import { ticTacToeGame } from './tictactoe';
 import { ticTacToe3PieceGame } from './tictactoe-3piece';
 import { hangmanGame } from './hangman';
 import { chessGameDefinition } from './chess';
 import { rockPaperScissorsGame } from './rockpaperscissors';
 import { dotsAndBoxesGame } from './dotsandboxes';
-import { colorWarsGame } from './colorwars';
 import { connectFourGame } from './connectfour';
 import { memoryGame } from './memory';
 import { marblesEvenOddGame } from './marblesevenodd';
@@ -16,14 +14,12 @@ import { airHockeyGame } from './airhockey';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
-  [gridChipsGame.id]: gridChipsGame,
   [ticTacToeGame.id]: ticTacToeGame,
   [ticTacToe3PieceGame.id]: ticTacToe3PieceGame,
   [hangmanGame.id]: hangmanGame,
   [chessGameDefinition.id]: chessGameDefinition,
   [rockPaperScissorsGame.id]: rockPaperScissorsGame,
   [dotsAndBoxesGame.id]: dotsAndBoxesGame,
-  [colorWarsGame.id]: colorWarsGame,
   [connectFourGame.id]: connectFourGame,
   [memoryGame.id]: memoryGame,
   [marblesEvenOddGame.id]: marblesEvenOddGame,

@@ -5,14 +5,12 @@ import { getGameList } from '../games/registry';
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const GAME_EMOJIS: Record<string, string> = {
-  gridchips: '🔵🔴',
   tictactoe: '❌⭕',
   'tictactoe-3piece': '🧠❌⭕',
   hangman: '🪢🔤',
   chess: '♟️👑',
   rockpaperscissors: '🪨📄✂️',
   dotsandboxes: '🔵📦',
-  colorwars: '🌈⚔️',
   connectfour: '🔴🟡',
   memory: '🧩🧠',
   marblesevenodd: '⚪🔢',
