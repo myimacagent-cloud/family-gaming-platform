@@ -211,10 +211,13 @@ export default function Room() {
   const boardThemeStyle = {
     background:
       themeKey === 'nightNeon'
-        ? 'linear-gradient(160deg, rgba(17,24,39,0.86) 0%, rgba(79,70,229,0.22) 100%)'
+        ? 'linear-gradient(160deg, rgba(2,6,23,0.92) 0%, rgba(30,27,75,0.85) 100%)'
         : `linear-gradient(160deg, rgba(255,255,255,0.92) 0%, ${theme.accent2}22 100%)`,
-    border: `2px solid ${theme.accent}66`,
-    boxShadow: `0 12px 30px ${theme.accent}33`,
+    border: themeKey === 'nightNeon' ? '2px solid rgba(34,211,238,0.9)' : `2px solid ${theme.accent}66`,
+    boxShadow:
+      themeKey === 'nightNeon'
+        ? '0 0 0 1px rgba(236,72,153,0.55), 0 0 18px rgba(34,211,238,0.65), 0 0 34px rgba(236,72,153,0.45), inset 0 0 20px rgba(34,211,238,0.12)'
+        : `0 12px 30px ${theme.accent}33`,
   } as const;
 
   const roomLink = useMemo(() => {
