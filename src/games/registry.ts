@@ -13,6 +13,7 @@ import { battleshipGame } from './battleship';
 import { checkersGame } from './checkers';
 import { airHockeyGame } from './airhockey';
 import { warGame } from './war';
+import { goFishGame } from './gofish';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -30,6 +31,7 @@ export const gameRegistry: GameRegistry = {
   [checkersGame.id]: checkersGame,
   [airHockeyGame.id]: airHockeyGame,
   [warGame.id]: warGame,
+  [goFishGame.id]: goFishGame,
 };
 
 // Helper functions

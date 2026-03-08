@@ -20,6 +20,7 @@ const GAME_EMOJIS: Record<string, string> = {
   checkers: '🔴⚫',
   airhockey: '🏒🥅',
   war: '🃏⚔️',
+  gofish: '🐟🃏',
 };
 
 function safeGetStorage(key: string): string | null {
