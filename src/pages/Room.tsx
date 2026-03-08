@@ -18,6 +18,22 @@ const STATUS_TEXT: Record<string, string> = {
   offline: 'Offline',
 };
 
+type ThemePalette = {
+  name: string;
+  bg: string;
+  accent: string;
+  accent2: string;
+  textOnAccent: string;
+};
+
+const THEME_KEY = 'pp.theme.v1';
+const THEME_PALETTES: Record<string, ThemePalette> = {
+  pixelPop: { name: 'Pixel Pop', bg: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)', accent: '#6D7DFF', accent2: '#9E5BFF', textOnAccent: '#ffffff' },
+  mintBlast: { name: 'Mint Blast', bg: 'linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%)', accent: '#00A896', accent2: '#00B4D8', textOnAccent: '#ffffff' },
+  sunsetArcade: { name: 'Sunset Arcade', bg: 'linear-gradient(135deg, #FF7A59 0%, #FF4D8D 100%)', accent: '#FF5A5F', accent2: '#FF4D8D', textOnAccent: '#ffffff' },
+  nightNeon: { name: 'Night Neon', bg: 'linear-gradient(135deg, #111827 0%, #312E81 100%)', accent: '#4F46E5', accent2: '#7C3AED', textOnAccent: '#ffffff' },
+};
+
 type RulesInfo = {
   howToPlay: string;
   scoring: string;
@@ -173,6 +189,8 @@ export default function Room() {
   const [showCopied, setShowCopied] = useState(false);
   const [showShareQr, setShowShareQr] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [themeKey, setThemeKey] = useState<string>(() => localStorage.getItem(THEME_KEY) || 'pixelPop');
   const [gameStats, setGameStats] = useState<StatLine>(DEFAULT_STATS);
   const [lastRecordedRound, setLastRecordedRound] = useState<number>(0);
   const initialGameType = (location.state as { gameType?: string } | null)?.gameType;
@@ -188,6 +206,7 @@ export default function Room() {
   }, [gameType]);
 
   const rulesInfo = gameType ? GAME_RULES[gameType] : undefined;
+  const theme = THEME_PALETTES[themeKey] || THEME_PALETTES.pixelPop;
 
   const roomLink = useMemo(() => {
     if (!roomCode) return '';
@@ -199,6 +218,10 @@ export default function Room() {
     if (!roomLink) return '';
     return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(roomLink)}`;
   }, [roomLink]);
+
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, themeKey);
+  }, [themeKey]);
 
   useEffect(() => {
     if (!userId || !gameType) return;
@@ -291,24 +314,24 @@ export default function Room() {
     | undefined;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: theme.bg }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.95)', padding: '15px 25px', borderRadius: '15px', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src={pixelPlaygroundLogo} alt="Pixel Playground" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' }} />
             <div>
-              <div style={{ margin: 0, fontSize: '12px', color: '#6D7DFF', fontWeight: 800 }}>PIXEL PLAYGROUND</div>
+              <div style={{ margin: 0, fontSize: '12px', color: theme.accent, fontWeight: 800 }}>PIXEL PLAYGROUND</div>
               <h1 style={{ margin: 0, fontSize: '22px', color: '#333' }}>{gameDefinition?.displayName || 'Game Room'} ✨</h1>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ color: '#666', fontSize: '14px' }}>Room:</span>
-            <code onClick={copyRoomCode} style={{ background: '#f0f0f0', padding: '6px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', letterSpacing: '2px', color: '#667eea', cursor: 'pointer' }}>
+            <code onClick={copyRoomCode} style={{ background: '#f0f0f0', padding: '6px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', letterSpacing: '2px', color: theme.accent, cursor: 'pointer' }}>
               {roomCode}
             </code>
             {showCopied && <span style={{ color: '#10b981', fontSize: '12px' }}>Code copied!</span>}
 
-            <button onClick={shareRoom} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#6D7DFF', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={shareRoom} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: theme.accent, color: theme.textOnAccent, fontWeight: 700, cursor: 'pointer' }}>
               Share
             </button>
             <button onClick={() => setShowShareQr((v) => !v)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
@@ -316,6 +339,9 @@ export default function Room() {
             </button>
             <button onClick={() => setShowRules(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
               ❓ Rules
+            </button>
+            <button onClick={() => setShowCustomize(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+              🎨 Customize
             </button>
           </div>
         </div>
@@ -325,7 +351,7 @@ export default function Room() {
             {STATUS_TEXT[connectionState]}
           </div>
           {connectionState === 'offline' && (
-            <button onClick={reconnect} style={{ padding: '8px 16px', background: '#6D7DFF', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+            <button onClick={reconnect} style={{ padding: '8px 16px', background: theme.accent, color: theme.textOnAccent, border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
               Reconnect
             </button>
           )}
@@ -392,7 +418,7 @@ export default function Room() {
         )}
 
         {isFinished && (
-          <button onClick={handleRestart} style={{ padding: '16px 40px', fontSize: '18px', fontWeight: 600, background: 'white', color: '#667eea', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
+          <button onClick={handleRestart} style={{ padding: '16px 40px', fontSize: '18px', fontWeight: 600, background: 'white', color: theme.accent, border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
             Play Again
           </button>
         )}
@@ -401,6 +427,44 @@ export default function Room() {
           Leave Room
         </button>
       </div>
+
+
+      {showCustomize && (
+        <div
+          onClick={() => setShowCustomize(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 'min(640px, 96vw)', maxHeight: '82vh', overflow: 'auto', background: 'white', borderRadius: 14, padding: 16 }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <h3 style={{ margin: 0, color: '#1f2937' }}>🎨 Customize Theme</h3>
+              <button onClick={() => setShowCustomize(false)} style={{ border: 'none', background: '#e5e7eb', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 700 }}>Close</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+              {Object.entries(THEME_PALETTES).map(([key, p]) => (
+                <button
+                  key={key}
+                  onClick={() => setThemeKey(key)}
+                  style={{
+                    textAlign: 'left',
+                    border: themeKey === key ? `3px solid ${p.accent}` : '1px solid #cbd5e1',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    background: '#fff',
+                    padding: 0,
+                  }}
+                >
+                  <div style={{ height: 66, background: p.bg }} />
+                  <div style={{ padding: 10, fontWeight: 700, color: '#334155' }}>{p.name}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {showRules && (
