@@ -18,6 +18,106 @@ const STATUS_TEXT: Record<string, string> = {
   offline: 'Offline',
 };
 
+type RulesInfo = {
+  howToPlay: string;
+  scoring: string;
+  gameEnd: string;
+  differences?: string;
+};
+
+const GAME_RULES: Record<string, RulesInfo> = {
+  tictactoe: {
+    howToPlay: 'Take turns placing your mark on a 3x3 grid. Make a line of 3 horizontally, vertically, or diagonally.',
+    scoring: 'Win = 1 win, draw = 1 draw, loss = 1 loss in your room stats.',
+    gameEnd: 'Ends when someone gets 3 in a row or all cells are filled.',
+    differences: 'Very close to classic Tic-Tac-Toe.',
+  },
+  'tictactoe-3piece': {
+    howToPlay: 'Each player only has 3 pieces and repositions them after placing all 3.',
+    scoring: 'Win/draw/loss tracked in room stats.',
+    gameEnd: 'Ends when someone forms a 3-in-a-row pattern.',
+    differences: 'Unlike classic Tic-Tac-Toe, pieces can move once all are placed.',
+  },
+  hangman: {
+    howToPlay: 'Players take turns guessing one letter of a hidden word.',
+    scoring: 'Co-op objective: reveal the full word before max wrong guesses.',
+    gameEnd: 'Ends when the word is solved or wrong guesses reach the limit.',
+    differences: 'Multiplayer co-op turn passing compared with solo classic Hangman.',
+  },
+  chess: {
+    howToPlay: 'Standard chess movement rules by piece type.',
+    scoring: 'Win/loss result only (no piece points shown).',
+    gameEnd: 'Checkmate, draw condition, or resignation/timeout if implemented.',
+    differences: 'Digital room + reconnect flow.',
+  },
+  rockpaperscissors: {
+    howToPlay: 'Both players choose rock, paper, or scissors each round.',
+    scoring: 'Round wins count toward overall result.',
+    gameEnd: 'Ends after configured rounds or when win condition is reached.',
+    differences: 'Room-based multiplayer flow instead of instant one-off.',
+  },
+  dotsandboxes: {
+    howToPlay: 'Draw lines to complete boxes; completing a box gives another turn.',
+    scoring: 'Each completed box = 1 point.',
+    gameEnd: 'Ends when all boxes are completed.',
+    differences: 'Classic rules with online room play.',
+  },
+  colorwars: {
+    howToPlay: 'Tap your tiles to add dots. Tiles burst at threshold and spread to neighbors.',
+    scoring: 'You score by controlling more tiles; elimination wins.',
+    gameEnd: 'Ends when one player loses all controlled color tiles (after both started).',
+    differences: 'Custom chain-reaction rules inspired by territory/chain games.',
+  },
+  connectfour: {
+    howToPlay: 'Drop pieces into columns and connect 4 in a row.',
+    scoring: 'Win/draw/loss tracked in room stats.',
+    gameEnd: 'Ends on connect-4 or full board draw.',
+    differences: 'Classic rules with room UI.',
+  },
+  memory: {
+    howToPlay: 'Flip two cards each turn and try to find matching pairs.',
+    scoring: 'Each pair found adds to your count.',
+    gameEnd: 'Ends when all pairs are matched.',
+    differences: 'Turn-based multiplayer in shared room.',
+  },
+  marblesevenodd: {
+    howToPlay: 'Players choose hidden marbles and guess odd/even outcomes.',
+    scoring: 'Correct outcomes add to your score according to game logic.',
+    gameEnd: 'Ends when target score/round condition is met.',
+    differences: 'Simplified family-friendly odd/even variant.',
+  },
+  battleship: {
+    howToPlay: 'Place ships, then take turns firing at grid coordinates.',
+    scoring: 'Hits sink ships; objective is to sink all opponent ships first.',
+    gameEnd: 'Ends when one fleet is fully sunk.',
+    differences: 'Classic battleship with simplified room interaction.',
+  },
+  checkers: {
+    howToPlay: 'Move diagonally, capture by jumping, king when reaching far row.',
+    scoring: 'No points; first to remove/block opponent wins.',
+    gameEnd: 'Ends when one player has no legal moves or no pieces.',
+    differences: 'Room-based multiplayer flow.',
+  },
+  airhockey: {
+    howToPlay: 'Choose guard row and shoot row each turn.',
+    scoring: 'A shot scores if it does not match opponent guard row. First to target score wins.',
+    gameEnd: 'Ends when a player reaches the target goals.',
+    differences: 'Custom turn-based strategy version of real-time air hockey.',
+  },
+  war: {
+    howToPlay: 'Each player flips top card each trick; higher rank wins the trick.',
+    scoring: 'Each trick won = 1 point.',
+    gameEnd: 'Ends when decks are exhausted; most tricks wins.',
+    differences: 'Simplified War (no tie-battle stack yet).',
+  },
+  gofish: {
+    howToPlay: 'Ask for a rank you hold. If opponent has it, they must give all cards of that rank; otherwise Go Fish.',
+    scoring: 'A book = 4 of the same rank. Each book = 1 point.',
+    gameEnd: 'Ends when all books are formed / no playable cards remain.',
+    differences: 'Privacy-safe action text and card-visual UI for room play.',
+  },
+};
+
 type StatLine = {
   wins: number;
   draws: number;
@@ -66,6 +166,7 @@ export default function Room() {
   const userId = localStorage.getItem('userId') || '';
   const [showCopied, setShowCopied] = useState(false);
   const [showShareQr, setShowShareQr] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [gameStats, setGameStats] = useState<StatLine>(DEFAULT_STATS);
   const [lastRecordedRound, setLastRecordedRound] = useState<number>(0);
   const initialGameType = (location.state as { gameType?: string } | null)?.gameType;
@@ -79,6 +180,8 @@ export default function Room() {
   const gameDefinition = useMemo(() => {
     return gameType ? getGame(gameType) : undefined;
   }, [gameType]);
+
+  const rulesInfo = gameType ? GAME_RULES[gameType] : undefined;
 
   const roomLink = useMemo(() => {
     if (!roomCode) return '';
@@ -205,6 +308,9 @@ export default function Room() {
             <button onClick={() => setShowShareQr((v) => !v)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
               QR
             </button>
+            <button onClick={() => setShowRules(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+              ❓ Rules
+            </button>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -289,6 +395,36 @@ export default function Room() {
           Leave Room
         </button>
       </div>
+
+
+      {showRules && (
+        <div
+          onClick={() => setShowRules(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 'min(760px, 96vw)', maxHeight: '82vh', overflow: 'auto', background: 'white', borderRadius: 14, padding: 16 }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <h3 style={{ margin: 0, color: '#1f2937' }}>❓ {gameDefinition?.displayName || 'Game'} Rules</h3>
+              <button onClick={() => setShowRules(false)} style={{ border: 'none', background: '#e5e7eb', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 700 }}>Close</button>
+            </div>
+            {rulesInfo ? (
+              <div style={{ display: 'grid', gap: 10, color: '#334155' }}>
+                <div><strong>How to play:</strong> {rulesInfo.howToPlay}</div>
+                <div><strong>How scoring works:</strong> {rulesInfo.scoring}</div>
+                <div><strong>When the game ends:</strong> {rulesInfo.gameEnd}</div>
+                {rulesInfo.differences && <div><strong>How this version differs:</strong> {rulesInfo.differences}</div>}
+              </div>
+            ) : (
+              <div style={{ color: '#475569' }}>
+                Rules for this game are not added yet. Add it in <code>GAME_RULES</code> in <code>Room.tsx</code> so future players can see it.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
         <img
