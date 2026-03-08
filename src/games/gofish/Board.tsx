@@ -116,12 +116,27 @@ export function GoFishBoard({ state, mySymbol, onMove, disabled }: GoFishBoardPr
 
       <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 10, width: '100%' }}>
         <div style={{ fontWeight: 800, marginBottom: 8, color: '#334155' }}>Opponent Hand</div>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
-          {Array.from({ length: oppHandCount }).map((_, i) => (
-            <div key={i} style={{ flex: '0 0 auto', animation: showDeal ? `dealIn 500ms ease ${i * 40}ms both` : undefined }}>
-              <CardBack small />
-            </div>
-          ))}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', minHeight: 86, overflowX: 'auto', padding: '2px 4px 4px' }}>
+          {Array.from({ length: oppHandCount }).map((_, i) => {
+            const mid = (oppHandCount - 1) / 2;
+            const offset = i - mid;
+            const angle = Math.max(-18, Math.min(18, offset * 4));
+            const lift = Math.max(0, 8 - Math.abs(offset) * 2);
+            return (
+              <div
+                key={i}
+                style={{
+                  flex: '0 0 auto',
+                  marginLeft: i === 0 ? 0 : -18,
+                  transform: `rotate(${angle}deg) translateY(${-lift}px)`,
+                  transformOrigin: 'bottom center',
+                  animation: showDeal ? `dealIn 500ms ease ${i * 40}ms both` : undefined,
+                }}
+              >
+                <CardBack small />
+              </div>
+            );
+          })}
           {oppHandCount === 0 && <span style={{ color: '#64748b' }}>No cards</span>}
         </div>
       </div>
