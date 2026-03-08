@@ -1,14 +1,15 @@
 import type { GameDefinition, MoveValidation } from '../types';
-import type { GridChipsState, GridChipsMove } from './types';
+import type { GridChipsState, GridChipsMove, GridChipsCell } from './types';
 import { GridChipsBoard } from './Board';
 
 const GAME_ID = 'gridchips';
 const ROWS = 7;
 const COLS = 7;
+const BURST_THRESHOLD = 4;
 
-// Match the reference screenshot layout
-const START_A = 1 * COLS + 1; // row 2, col 2
-const START_B = 2 * COLS + 3; // row 3, col 4
+function createEmptyBoard(): GridChipsCell[] {
+  return Array.from({ length: ROWS * COLS }, () => ({ owner: null, dots: 0 }));
+}
 
 function createInitialState(_roomCode: string): GridChipsState {
   return {
@@ -19,52 +20,24 @@ function createInitialState(_roomCode: string): GridChipsState {
     currentPlayerIndex: 0,
     rows: ROWS,
     cols: COLS,
-    positions: {},
-    startPositions: {},
-    moveCount: 0,
-  };
-}
-
-function ensurePositions(state: GridChipsState): GridChipsState {
-  if (state.players.length < 2) return state;
-  if (Object.keys(state.positions).length > 0) return state;
-
-  const first = state.players[0]?.symbol;
-  const second = state.players[1]?.symbol;
-
-  if (!first || !second) return state;
-
-  return {
-    ...state,
-    positions: {
-      [first]: START_A,
-      [second]: START_B,
-    },
-    startPositions: {
-      [first]: START_A,
-      [second]: START_B,
-    },
+    board: createEmptyBoard(),
+    moveCounts: {},
+    totalMoves: 0,
   };
 }
 
 function createRestartState(currentState: GridChipsState): GridChipsState {
-  const symbols = currentState.players.map((p) => p.symbol);
-  const [first = 'X', second = 'O'] = symbols;
+  const moveCounts: Record<string, number> = {};
+  for (const p of currentState.players) moveCounts[p.symbol] = 0;
 
   return {
     ...currentState,
     status: 'active',
     winner: null,
     currentPlayerIndex: 0,
-    moveCount: 0,
-    positions: {
-      [first]: START_A,
-      [second]: START_B,
-    },
-    startPositions: {
-      [first]: START_A,
-      [second]: START_B,
-    },
+    board: createEmptyBoard(),
+    moveCounts,
+    totalMoves: 0,
   };
 }
 
@@ -79,62 +52,118 @@ function neighbors(index: number): number[] {
   return out;
 }
 
-function validateMove(inputState: GridChipsState, move: GridChipsMove, playerSymbol: string): MoveValidation {
-  const state = ensurePositions(inputState);
+function cloneBoard(board: GridChipsCell[]): GridChipsCell[] {
+  return board.map((cell) => ({ ...cell }));
+}
 
+function countOwned(board: GridChipsCell[], symbol: string): number {
+  let count = 0;
+  for (const cell of board) {
+    if (cell.owner === symbol) count += 1;
+  }
+  return count;
+}
+
+function validateMove(state: GridChipsState, move: GridChipsMove, playerSymbol: string): MoveValidation {
   if (state.status !== 'active') return { valid: false, error: 'Game is not active' };
 
   const currentPlayer = state.players[state.currentPlayerIndex];
   if (currentPlayer?.symbol !== playerSymbol) return { valid: false, error: 'Not your turn' };
 
-  if (!move || typeof move.to !== 'number') return { valid: false, error: 'Invalid move' };
+  if (!move || typeof move.index !== 'number') return { valid: false, error: 'Invalid move' };
+  if (move.index < 0 || move.index >= state.board.length) return { valid: false, error: 'Out of bounds' };
 
-  const total = state.rows * state.cols;
-  if (move.to < 0 || move.to >= total) return { valid: false, error: 'Out of bounds' };
+  const cell = state.board[move.index];
+  const hasPlayed = (state.moveCounts[playerSymbol] || 0) > 0;
 
-  const from = state.positions[playerSymbol];
-  if (typeof from !== 'number') return { valid: false, error: 'Player position missing' };
+  // First move: must pick a white tile and it starts with 3 dots.
+  if (!hasPlayed) {
+    if (cell.owner !== null) return { valid: false, error: 'First move must be on a white tile' };
+    return { valid: true };
+  }
 
-  if (!neighbors(from).includes(move.to)) return { valid: false, error: 'Move must be 1 square orthogonally' };
+  // After first move: can only play own color, never white or opponent tiles.
+  if (cell.owner !== playerSymbol) {
+    return { valid: false, error: 'After your first move, you can only play your own color' };
+  }
 
   return { valid: true };
 }
 
-function applyMove(inputState: GridChipsState, move: GridChipsMove, playerSymbol: string): GridChipsState {
-  const state = ensurePositions(inputState);
+function applyMove(state: GridChipsState, move: GridChipsMove, playerSymbol: string): GridChipsState {
+  const board = cloneBoard(state.board);
+  const moveCounts = { ...state.moveCounts };
+  const hasPlayed = (moveCounts[playerSymbol] || 0) > 0;
 
-  const positions = { ...state.positions, [playerSymbol]: move.to };
-  const opponent = state.players.find((p) => p.symbol !== playerSymbol)?.symbol;
-
-  // Win if you capture opponent or reach opponent's start tile
-  const captured = opponent ? positions[opponent] === move.to : false;
-  const reachedStart = opponent ? state.startPositions[opponent] === move.to : false;
-
-  if (captured || reachedStart) {
-    return {
-      ...state,
-      positions,
-      moveCount: state.moveCount + 1,
-      status: 'finished',
-      winner: playerSymbol,
-    };
+  if (!hasPlayed) {
+    board[move.index].owner = playerSymbol;
+    board[move.index].dots = 3;
+  } else {
+    board[move.index].owner = playerSymbol;
+    board[move.index].dots += 1;
   }
 
-  // Safety draw fallback
-  if (state.moveCount + 1 >= 60) {
-    return {
-      ...state,
-      positions,
-      moveCount: state.moveCount + 1,
-      status: 'draw',
-      winner: null,
-    };
+  const queue: number[] = [move.index];
+
+  while (queue.length > 0) {
+    const idx = queue.shift()!;
+    const cell = board[idx];
+
+    if (cell.owner !== playerSymbol) continue;
+    if (cell.dots < BURST_THRESHOLD) continue;
+
+    cell.dots -= BURST_THRESHOLD;
+    if (cell.dots <= 0) {
+      cell.dots = 0;
+      cell.owner = null;
+    }
+
+    for (const n of neighbors(idx)) {
+      board[n].owner = playerSymbol;
+      board[n].dots += 1;
+      if (board[n].dots >= BURST_THRESHOLD) queue.push(n);
+    }
+  }
+
+  moveCounts[playerSymbol] = (moveCounts[playerSymbol] || 0) + 1;
+  const totalMoves = state.totalMoves + 1;
+
+  const opponent = state.players.find((p) => p.symbol !== playerSymbol)?.symbol;
+
+  // Elimination rule: once both players have made at least one move,
+  // first player to have 0 owned tiles loses.
+  if (opponent && (moveCounts[playerSymbol] || 0) > 0 && (moveCounts[opponent] || 0) > 0) {
+    const currentOwned = countOwned(board, playerSymbol);
+    const opponentOwned = countOwned(board, opponent);
+
+    if (currentOwned === 0 && opponentOwned > 0) {
+      return {
+        ...state,
+        board,
+        moveCounts,
+        totalMoves,
+        status: 'finished',
+        winner: opponent,
+      };
+    }
+
+    if (opponentOwned === 0 && currentOwned > 0) {
+      return {
+        ...state,
+        board,
+        moveCounts,
+        totalMoves,
+        status: 'finished',
+        winner: playerSymbol,
+      };
+    }
   }
 
   return {
     ...state,
-    positions,
-    moveCount: state.moveCount + 1,
+    board,
+    moveCounts,
+    totalMoves,
     currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,
   };
 }
@@ -148,7 +177,7 @@ function checkGameEnd(state: GridChipsState): { ended: boolean; winner: string |
 export const gridChipsGame: GameDefinition<GridChipsState, GridChipsMove> = {
   id: GAME_ID,
   displayName: '🔵🔴 Grid Chips',
-  description: 'Move one square per turn. Reach the opponent start tile or capture them to win.',
+  description: 'First tap starts at 3 dots. Then play only your own color. Burst and eliminate to win.',
   minPlayers: 2,
   maxPlayers: 2,
   createInitialState,

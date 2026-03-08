@@ -6,100 +6,66 @@ interface GridChipsBoardProps extends GameBoardProps<GridChipsState> {}
 export function GridChipsBoard({ state, mySymbol, onMove, disabled }: GridChipsBoardProps) {
   const isMyTurn = state.players[state.currentPlayerIndex]?.symbol === mySymbol;
   const isFinished = state.status === 'finished' || state.status === 'draw';
-  const canPlay = !disabled && isMyTurn && !isFinished;
+  const canPlay = !disabled && !isFinished && isMyTurn;
 
-  const me = state.players.find((p) => p.symbol === mySymbol);
-  const opponent = state.players.find((p) => p.symbol !== mySymbol);
+  const p1 = state.players[0];
+  const p2 = state.players[1];
 
-  const fallbackMyStart = state.players[0]?.symbol === mySymbol ? 1 * state.cols + 1 : 2 * state.cols + 3;
-  const fallbackOpponentStart = state.players[0]?.symbol === mySymbol ? 2 * state.cols + 3 : 1 * state.cols + 1;
-
-  const myPos = state.positions[mySymbol] ?? fallbackMyStart;
-  const opponentPos = opponent ? (state.positions[opponent.symbol] ?? fallbackOpponentStart) : -1;
-
-  const getNeighbors = (index: number): number[] => {
-    const r = Math.floor(index / state.cols);
-    const c = index % state.cols;
-    const out: number[] = [];
-    if (r > 0) out.push((r - 1) * state.cols + c);
-    if (r < state.rows - 1) out.push((r + 1) * state.cols + c);
-    if (c > 0) out.push(r * state.cols + (c - 1));
-    if (c < state.cols - 1) out.push(r * state.cols + (c + 1));
-    return out;
+  const colorFor = (symbol: string | null) => {
+    if (!symbol) return '#e2e8f0';
+    if (symbol === p1?.symbol) return '#22d3ee';
+    if (symbol === p2?.symbol) return '#f472b6';
+    return '#a78bfa';
   };
 
-  const validTargets = canPlay && typeof myPos === 'number' ? new Set(getNeighbors(myPos)) : new Set<number>();
+  const hasPlayed = (state.moveCounts[mySymbol] || 0) > 0;
 
-  const makeMove = (to: number) => {
-    if (!canPlay || !validTargets.has(to)) return;
-    const move: GridChipsMove = { to };
+  const makeMove = (index: number) => {
+    if (!canPlay) return;
+    const move: GridChipsMove = { index };
     onMove(move);
   };
 
-  const chip = (symbol: string, isBlue: boolean) => (
-    <div
-      style={{
-        width: '72%',
-        height: '72%',
-        borderRadius: '50%',
-        background: isBlue ? '#22c5ee' : '#ff6262',
-        display: 'grid',
-        placeItems: 'center',
-        boxShadow: '0 6px 14px rgba(0,0,0,0.18)',
-      }}
-    >
-      <div
-        style={{
-          width: '60%',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gridTemplateRows: 'repeat(2, 1fr)',
-          gap: 6,
-          transform: 'translateY(2px)',
-        }}
-      >
-        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#fff', justifySelf: 'center', alignSelf: 'center' }} />
-        <span />
-        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#fff', justifySelf: 'center', alignSelf: 'center' }} />
-        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#fff', justifySelf: 'center', alignSelf: 'center' }} />
-      </div>
-      <span style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}>{symbol}</span>
-    </div>
-  );
-
-  const total = state.rows * state.cols;
+  const dotView = (dots: number) => {
+    if (dots <= 0) return null;
+    return <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(15,23,42,0.9)' }}>{dots}</span>;
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-      <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 12, padding: '9px 12px', fontWeight: 700, color: '#334155' }}>
-        {isFinished
-          ? state.status === 'draw'
-            ? '🤝 Draw game'
-            : state.winner === mySymbol
-              ? '🏆 You win!'
-              : '🎉 Opponent wins!'
-          : canPlay
-            ? 'Your turn — move 1 square'
-            : "Opponent's turn"}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 14, background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', fontWeight: 700 }}>
+        <span style={{ color: '#0891b2' }}>🩵 {p1?.displayName ?? 'P1'}</span>
+        <span style={{ color: '#db2777' }}>🩷 {p2?.displayName ?? 'P2'}</span>
       </div>
+
+      {!isFinished && (
+        <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 10, padding: '8px 12px', fontWeight: 700, color: '#334155', textAlign: 'center' }}>
+          {isMyTurn
+            ? hasPlayed
+              ? 'Your turn — play only your color.'
+              : 'Your first move: tap a white tile (starts with 3 dots).'
+            : '⏳ Waiting for opponent...'}
+        </div>
+      )}
 
       <div
         style={{
-          width: 'min(560px, calc(100vw - 40px))',
-          aspectRatio: '1 / 1',
-          background: '#ea8f74',
-          borderRadius: 24,
-          padding: 14,
           display: 'grid',
           gridTemplateColumns: `repeat(${state.cols}, 1fr)`,
-          gap: 10,
-          boxShadow: '0 15px 34px rgba(0,0,0,0.2)',
+          gap: 6,
+          width: 'min(520px, calc(100vw - 40px))',
+          aspectRatio: '1 / 1',
+          background: 'rgba(15,23,42,0.95)',
+          borderRadius: 14,
+          padding: 10,
         }}
       >
-        {Array.from({ length: total }, (_, i) => {
-          const hasMe = myPos === i;
-          const hasOpponent = opponentPos === i;
-          const selectable = validTargets.has(i);
+        {state.board.map((cell, i) => {
+          const selectable = canPlay
+            ? hasPlayed
+              ? cell.owner === mySymbol
+              : cell.owner === null
+            : false;
 
           return (
             <button
@@ -107,31 +73,34 @@ export function GridChipsBoard({ state, mySymbol, onMove, disabled }: GridChipsB
               onClick={() => makeMove(i)}
               disabled={!selectable}
               style={{
-                border: 'none',
-                borderRadius: 18,
-                background: selectable ? '#f8d4da' : '#efdfc7',
+                border: selectable ? '2px solid rgba(15,23,42,0.2)' : 'none',
+                borderRadius: 10,
+                background: selectable ? '#f8d4da' : colorFor(cell.owner),
                 cursor: selectable ? 'pointer' : 'default',
-                display: 'grid',
-                placeItems: 'center',
-                position: 'relative',
-                transition: 'transform 120ms ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: cell.owner
+                  ? 'inset 0 0 0 2px rgba(15,23,42,0.15)'
+                  : 'inset 0 0 0 2px rgba(51,65,85,0.25)',
               }}
-              aria-label={`Grid cell ${i + 1}`}
+              aria-label={`Cell ${i + 1}`}
             >
-              {hasMe && chip(mySymbol, true)}
-              {hasOpponent && opponent && chip(opponent.symbol, false)}
+              {dotView(cell.dots)}
             </button>
           );
         })}
       </div>
 
-      <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#334155' }}>
-        Goal: reach your opponent&apos;s start tile or land on their chip.
+      <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#334155', textAlign: 'center' }}>
+        Rules: first tap = 3 dots on a white tile. Then you can only play your own color. At 4 dots, tile bursts to neighbors.
       </div>
 
-      <div style={{ fontSize: 12, color: 'white', opacity: 0.9 }}>
-        {me?.displayName ?? 'Blue'} vs {opponent?.displayName ?? 'Red'}
-      </div>
+      {isFinished && (
+        <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: '10px 14px', fontWeight: 800, color: '#1e293b' }}>
+          {state.status === 'draw' ? '🤝 Tie game!' : state.winner === mySymbol ? '🏆 You win!' : '🎉 Opponent wins!'}
+        </div>
+      )}
     </div>
   );
 }
