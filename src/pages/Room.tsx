@@ -208,6 +208,17 @@ export default function Room() {
   const rulesInfo = gameType ? GAME_RULES[gameType] : undefined;
   const theme = THEME_PALETTES[themeKey] || THEME_PALETTES.pixelPop;
 
+  const pieceToneStyle = {
+    filter:
+      themeKey === 'mintBlast'
+        ? 'hue-rotate(95deg) saturate(1.08)'
+        : themeKey === 'sunsetArcade'
+          ? 'hue-rotate(-28deg) saturate(1.16)'
+          : themeKey === 'nightNeon'
+            ? 'hue-rotate(155deg) saturate(1.22) contrast(1.04)'
+            : 'none',
+  } as const;
+
   const boardThemeStyle = {
     background:
       themeKey === 'nightNeon'
@@ -389,7 +400,7 @@ export default function Room() {
           <div style={{ display: 'flex', gap: '40px', padding: '20px 40px', background: 'rgba(255,255,255,0.95)', borderRadius: '15px', alignItems: 'center' }}>
             {roomState.players.map((p) => (
               <div key={p.userId} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', opacity: p.connected ? 1 : 0.5 }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold', background: p.symbol === 'X' ? '#667eea' : '#764ba2', color: 'white', boxShadow: p.userId === userId ? '0 0 0 4px #ffeb3b' : 'none' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold', background: p.symbol === 'X' ? theme.accent : theme.accent2, color: 'white', boxShadow: p.userId === userId ? '0 0 0 4px #ffeb3b' : 'none' }}>
                   {p.symbol}
                 </div>
                 <span style={{ fontSize: '14px', fontWeight: 600 }}>{p.displayName}</span>
@@ -424,13 +435,15 @@ export default function Room() {
               justifyContent: 'center',
             }}
           >
-            <GameBoardComponent
-              state={roomState as any}
-              myPlayerId={userId}
-              mySymbol={currentPlayer?.symbol || ''}
-              onMove={handleMakeMove}
-              disabled={connectionState !== 'connected'}
-            />
+            <div style={{ ...pieceToneStyle, width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <GameBoardComponent
+                state={roomState as any}
+                myPlayerId={userId}
+                mySymbol={currentPlayer?.symbol || ''}
+                onMove={handleMakeMove}
+                disabled={connectionState !== 'connected'}
+              />
+            </div>
           </div>
         )}
 
