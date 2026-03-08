@@ -116,7 +116,7 @@ export function UnoLightBoard({ state, mySymbol, myPlayerId, onMove, disabled }:
       </div>
 
       <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 10, width: '100%' }}>
-        <div style={{ fontWeight: 800, marginBottom: 8, color: '#334155' }}>Opponent Backhand</div>
+        <div style={{ fontWeight: 800, marginBottom: 8, color: '#334155' }}>Opponent Hand</div>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', minHeight: 78, overflowX: 'auto', padding: '2px 4px 4px' }}>
           {Array.from({ length: oppCount }).map((_, i) => {
             const mid = (oppCount - 1) / 2;

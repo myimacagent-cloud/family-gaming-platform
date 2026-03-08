@@ -57,6 +57,31 @@ function nextIndex(state: UnoLightState, step = 1): number {
   return (state.currentPlayerIndex + step + total * 10) % total;
 }
 
+
+function dealForSymbols(first: string, second: string): Pick<UnoLightState, 'deck' | 'hands' | 'topCard' | 'activeColor' | 'pendingDraw' | 'direction' | 'lastAction'> {
+  const deck = makeDeck();
+  const firstHand = draw(deck, 7);
+  const secondHand = draw(deck, 7);
+  let topCard = deck.shift() || null;
+
+  while (topCard && parseCard(topCard).color === 'W') {
+    deck.push(topCard);
+    topCard = deck.shift() || null;
+  }
+
+  const activeColor = topCard ? (parseCard(topCard).color as Color) : 'R';
+
+  return {
+    deck,
+    hands: { [first]: firstHand, [second]: secondHand },
+    topCard,
+    activeColor,
+    pendingDraw: 0,
+    direction: 1,
+    lastAction: 'Cards dealt. Match by color/value or play a wild.',
+  };
+}
+
 function ensurePrepared(state: UnoLightState): UnoLightState {
   if (state.players.length < 2) return state;
   const p1 = state.players[0].symbol;
@@ -98,38 +123,41 @@ function canPlay(card: string, topCard: string | null, activeColor: Color | null
 }
 
 function createInitialState(_roomCode: string): UnoLightState {
+  const dealt = dealForSymbols('X', 'O');
   return {
     gameType: GAME_ID,
     players: [],
     status: 'waiting',
     winner: null,
     currentPlayerIndex: 0,
-    deck: [],
-    hands: {},
-    topCard: null,
-    activeColor: null,
-    pendingDraw: 0,
-    direction: 1,
-    lastAction: 'Play a matching color/value card. Wild lets you pick color.',
+    deck: dealt.deck,
+    hands: dealt.hands,
+    topCard: dealt.topCard,
+    activeColor: dealt.activeColor,
+    pendingDraw: dealt.pendingDraw,
+    direction: dealt.direction,
+    lastAction: dealt.lastAction,
   };
 }
 
 function createRestartState(currentState: UnoLightState): UnoLightState {
   const p1 = currentState.players[0]?.symbol || 'X';
   const p2 = currentState.players[1]?.symbol || 'O';
-  return ensurePrepared({
+  const dealt = dealForSymbols(p1, p2);
+
+  return {
     ...currentState,
     status: 'active',
     winner: null,
     currentPlayerIndex: 0,
-    deck: [],
-    hands: { [p1]: [], [p2]: [] },
-    topCard: null,
-    activeColor: null,
-    pendingDraw: 0,
-    direction: 1,
-    lastAction: 'New round started.',
-  });
+    deck: dealt.deck,
+    hands: dealt.hands,
+    topCard: dealt.topCard,
+    activeColor: dealt.activeColor,
+    pendingDraw: dealt.pendingDraw,
+    direction: dealt.direction,
+    lastAction: 'New round started. Cards dealt.',
+  };
 }
 
 function validateMove(inputState: UnoLightState, move: UnoLightMove, playerSymbol: string): MoveValidation {
