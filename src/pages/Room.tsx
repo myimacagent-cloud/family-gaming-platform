@@ -64,7 +64,6 @@ export default function Room() {
   const location = useLocation();
   const userId = localStorage.getItem('userId') || '';
   const [showCopied, setShowCopied] = useState(false);
-  const [showLinkCopied, setShowLinkCopied] = useState(false);
   const [showShareQr, setShowShareQr] = useState(false);
   const [gameStats, setGameStats] = useState<StatLine>(DEFAULT_STATS);
   const [lastRecordedRound, setLastRecordedRound] = useState<number>(0);
@@ -138,13 +137,6 @@ export default function Room() {
     setTimeout(() => setShowCopied(false), 2000);
   };
 
-  const copyRoomLink = () => {
-    if (!roomLink) return;
-    navigator.clipboard.writeText(roomLink);
-    setShowLinkCopied(true);
-    setTimeout(() => setShowLinkCopied(false), 2000);
-  };
-
   const shareRoom = async () => {
     if (!roomLink) return;
     if (navigator.share) {
@@ -159,7 +151,7 @@ export default function Room() {
         // fallback to copy link
       }
     }
-    copyRoomLink();
+    navigator.clipboard.writeText(roomLink);
   };
 
   const currentPlayer = roomState?.players.find(p => p.userId === userId);
@@ -205,13 +197,9 @@ export default function Room() {
             <button onClick={shareRoom} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#667eea', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
               Share
             </button>
-            <button onClick={copyRoomLink} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
-              Copy Link
-            </button>
             <button onClick={() => setShowShareQr((v) => !v)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
               QR
             </button>
-            {showLinkCopied && <span style={{ color: '#10b981', fontSize: '12px' }}>Link copied!</span>}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
