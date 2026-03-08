@@ -70,11 +70,13 @@ export function GoFishBoard({ state, mySymbol, onMove, disabled }: GoFishBoardPr
 
   const me = state.players.find((p) => p.symbol === mySymbol);
   const opp = state.players.find((p) => p.symbol !== mySymbol);
+  const fallbackOppSymbol = Object.keys(state.hands || {}).find((sym) => sym !== mySymbol);
+  const oppSymbol = opp?.symbol || fallbackOppSymbol;
 
   const myHand = state.hands?.[mySymbol] || [];
-  const oppHandCount = opp ? state.hands?.[opp.symbol]?.length ?? 0 : 0;
+  const oppHandCount = oppSymbol ? state.hands?.[oppSymbol]?.length ?? 0 : 0;
   const myBooks = state.books?.[mySymbol] ?? 0;
-  const oppBooks = opp ? state.books?.[opp.symbol] ?? 0 : 0;
+  const oppBooks = oppSymbol ? state.books?.[oppSymbol] ?? 0 : 0;
 
   const [animatedRank, setAnimatedRank] = useState<number | null>(null);
   const [showDeal, setShowDeal] = useState(true);
