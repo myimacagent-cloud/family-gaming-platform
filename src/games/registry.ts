@@ -12,6 +12,7 @@ import { marblesEvenOddGame } from './marblesevenodd';
 import { battleshipGame } from './battleship';
 import { checkersGame } from './checkers';
 import { airHockeyGame } from './airhockey';
+import { warGame } from './war';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -28,6 +29,7 @@ export const gameRegistry: GameRegistry = {
   [battleshipGame.id]: battleshipGame,
   [checkersGame.id]: checkersGame,
   [airHockeyGame.id]: airHockeyGame,
+  [warGame.id]: warGame,
 };
 
 // Helper functions
