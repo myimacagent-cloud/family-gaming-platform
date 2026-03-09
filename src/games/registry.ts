@@ -19,6 +19,8 @@ import { unoLightGame } from './unolight';
 import { blackjackGame } from './blackjack';
 import { oldMaidGame } from './oldmaid';
 import { snakesLaddersGame } from './snakesladders';
+import { bingoGame } from './bingo';
+import { dominoesGame } from './dominoes';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -42,6 +44,8 @@ export const gameRegistry: GameRegistry = {
   [blackjackGame.id]: blackjackGame,
   [oldMaidGame.id]: oldMaidGame,
   [snakesLaddersGame.id]: snakesLaddersGame,
+  [bingoGame.id]: bingoGame,
+  [dominoesGame.id]: dominoesGame,
 };
 
 // Helper functions

@@ -166,6 +166,18 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends when a player reaches square 100.',
     differences: 'Quick online 2-player version with instant auto-roll movement.',
   },
+  bingo: {
+    howToPlay: 'Caller draws a number, players mark it if present on their board.',
+    scoring: 'First player to complete a full line wins.',
+    gameEnd: 'Ends as soon as a player gets BINGO (or draw if no numbers remain).',
+    differences: '2-player online call-and-mark flow with FREE center tile.',
+  },
+  dominoes: {
+    howToPlay: 'Play tiles by matching chain ends. If blocked, draw from boneyard.',
+    scoring: 'Win by playing all tiles. If blocked, lowest pip sum wins.',
+    gameEnd: 'Ends when a player empties hand or both players are blocked.',
+    differences: 'Fast 2-player draw dominoes with side-select play controls.',
+  },
 };
 
 type StatLine = {
