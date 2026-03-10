@@ -27,6 +27,26 @@ type ThemePalette = {
 };
 
 const THEME_KEY = 'pp.theme.v1';
+const NEON_PIXELS = [
+  { x: 6, y: 10, c: '#22d3ee', d: 0 },
+  { x: 18, y: 22, c: '#ec4899', d: 0.3 },
+  { x: 32, y: 8, c: '#a78bfa', d: 0.7 },
+  { x: 46, y: 18, c: '#22d3ee', d: 1.1 },
+  { x: 58, y: 12, c: '#f472b6', d: 0.5 },
+  { x: 72, y: 25, c: '#22d3ee', d: 1.3 },
+  { x: 84, y: 14, c: '#a78bfa', d: 0.9 },
+  { x: 12, y: 52, c: '#22d3ee', d: 0.8 },
+  { x: 26, y: 66, c: '#f472b6', d: 1.5 },
+  { x: 40, y: 58, c: '#22d3ee', d: 0.2 },
+  { x: 55, y: 70, c: '#a78bfa', d: 1.0 },
+  { x: 70, y: 62, c: '#22d3ee', d: 0.4 },
+  { x: 86, y: 74, c: '#f472b6', d: 1.2 },
+  { x: 8, y: 84, c: '#a78bfa', d: 0.6 },
+  { x: 22, y: 90, c: '#22d3ee', d: 1.7 },
+  { x: 38, y: 82, c: '#ec4899', d: 0.1 },
+  { x: 64, y: 88, c: '#22d3ee', d: 1.4 },
+  { x: 78, y: 92, c: '#a78bfa', d: 0.55 }
+] as const;
 const THEME_PALETTES: Record<string, ThemePalette> = {
   pixelPop: { name: 'Pixel Pop', bg: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)', accent: '#6D7DFF', accent2: '#9E5BFF', textOnAccent: '#ffffff' },
   mintBlast: { name: 'Mint Blast', bg: 'linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%)', accent: '#00A896', accent2: '#00B4D8', textOnAccent: '#ffffff' },
@@ -469,7 +489,28 @@ export default function Room() {
         </div>
       )}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '25px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '25px', position: 'relative', zIndex: 1 }}>
+        {themeKey === 'nightNeon' && (
+          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+            {NEON_PIXELS.map((p, i) => (
+              <span
+                key={`np-${i}`}
+                style={{
+                  position: 'absolute',
+                  left: `${p.x}%`,
+                  top: `${p.y}%`,
+                  width: 6,
+                  height: 6,
+                  background: p.c,
+                  boxShadow: `0 0 10px ${p.c}, 0 0 16px ${p.c}`,
+                  borderRadius: 1,
+                  opacity: 0.85,
+                  animation: `neonPixelTwinkle 2.2s ease-in-out ${p.d}s infinite`,
+                }}
+              />
+            ))}
+          </div>
+        )}
         {roomState && (
           <div style={{ display: 'flex', gap: '40px', padding: '20px 40px', background: 'rgba(255,255,255,0.95)', borderRadius: '15px', alignItems: 'center' }}>
             {roomState.players.map((p) => (
@@ -628,7 +669,7 @@ export default function Room() {
         </div>
       )}
 
-      <style>{`@keyframes neonPulse { 0% { box-shadow: 0 0 0 1px rgba(236,72,153,0.45), 0 0 14px rgba(34,211,238,0.45), 0 0 26px rgba(236,72,153,0.28), inset 0 0 14px rgba(34,211,238,0.08); } 50% { box-shadow: 0 0 0 1px rgba(236,72,153,0.75), 0 0 24px rgba(34,211,238,0.88), 0 0 42px rgba(236,72,153,0.58), inset 0 0 24px rgba(34,211,238,0.2); } 100% { box-shadow: 0 0 0 1px rgba(236,72,153,0.45), 0 0 14px rgba(34,211,238,0.45), 0 0 26px rgba(236,72,153,0.28), inset 0 0 14px rgba(34,211,238,0.08); } }`}</style>
+      <style>{`@keyframes neonPulse { 0% { box-shadow: 0 0 0 1px rgba(236,72,153,0.45), 0 0 14px rgba(34,211,238,0.45), 0 0 26px rgba(236,72,153,0.28), inset 0 0 14px rgba(34,211,238,0.08); } 50% { box-shadow: 0 0 0 1px rgba(236,72,153,0.75), 0 0 24px rgba(34,211,238,0.88), 0 0 42px rgba(236,72,153,0.58), inset 0 0 24px rgba(34,211,238,0.2); } 100% { box-shadow: 0 0 0 1px rgba(236,72,153,0.45), 0 0 14px rgba(34,211,238,0.45), 0 0 26px rgba(236,72,153,0.28), inset 0 0 14px rgba(34,211,238,0.08); } } @keyframes neonPixelTwinkle { 0% { opacity: 0.35; transform: scale(0.85);} 50% { opacity: 1; transform: scale(1.2);} 100% { opacity: 0.35; transform: scale(0.85);} }`}</style>
 
       <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
         <img
