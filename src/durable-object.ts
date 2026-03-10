@@ -12,6 +12,7 @@ interface InternalRoomState {
   currentPlayerIndex: number;
   roundNumber: number;
   gameData: unknown;
+  restartVotes: string[];
   createdAt: number;
   lastActivityTs: number;
 }
@@ -34,6 +35,7 @@ export class GameRoom {
       currentPlayerIndex: 0,
       roundNumber: 1,
       gameData: null,
+      restartVotes: [],
       createdAt: Date.now(),
       lastActivityTs: Date.now(),
     };
@@ -45,6 +47,7 @@ export class GameRoom {
       this.roomState = {
         ...stored,
         roundNumber: typeof stored.roundNumber === 'number' ? stored.roundNumber : 1,
+        restartVotes: Array.isArray((stored as any).restartVotes) ? (stored as any).restartVotes : [],
       };
     }
   }
@@ -126,6 +129,9 @@ export class GameRoom {
       case 'restart_game':
         await this.handleRestart(wsId, message);
         break;
+      case 'restart_vote':
+        await this.handleRestartVote(wsId, message);
+        break;
       case 'request_state':
         this.sendToClient(ws, { type: 'state_sync', state: this.getPublicState() });
         break;
@@ -154,6 +160,7 @@ export class GameRoom {
       winner: this.roomState.winner,
       currentPlayerIndex: this.roomState.currentPlayerIndex,
       roundNumber: this.roomState.roundNumber,
+      restartVotes: this.roomState.restartVotes || [],
       gameData: this.roomState.gameData,
       // Spread game-specific properties for direct access (excluding room-level properties)
       ...gameSpecificData,
@@ -321,6 +328,7 @@ export class GameRoom {
     
     this.roomState.players.push(newPlayer);
     this.connections.set(wsId, ws);
+    this.roomState.restartVotes = [];
 
     // Start game if we have enough players
     const currentGameDef = this.getGameDefinition();
@@ -393,16 +401,14 @@ export class GameRoom {
       this.roomState.winner = gameEnd.winner;
     }
 
+    this.roomState.restartVotes = [];
     this.syncGameDataMetadata();
 
     this.broadcastMessage({ type: 'move_applied', state: this.getPublicState() });
     await this.persistState();
   }
 
-  private async handleRestart(_wsId: string, { userId }: { userId: string }): Promise<void> {
-    const player = this.roomState.players.find(p => p.userId === userId);
-    if (!player) return;
-
+  private doRestartRound(): void {
     const gameDef = this.getGameDefinition();
     if (!gameDef) return;
 
@@ -412,6 +418,7 @@ export class GameRoom {
     this.roomState.status = 'active';
     this.roomState.winner = null;
     this.roomState.roundNumber += 1;
+    this.roomState.restartVotes = [];
 
     if (previousWinner) {
       const winnerIndex = this.roomState.players.findIndex(p => p.symbol === previousWinner);
@@ -422,6 +429,32 @@ export class GameRoom {
 
     (this.roomState.gameData as BaseGameState).currentPlayerIndex = this.roomState.currentPlayerIndex;
     this.syncGameDataMetadata();
+  }
+
+  private async handleRestart(_wsId: string, { userId }: { userId: string }): Promise<void> {
+    const player = this.roomState.players.find(p => p.userId === userId);
+    if (!player) return;
+
+    this.doRestartRound();
+    this.broadcastStateSync();
+    await this.persistState();
+  }
+
+  private async handleRestartVote(_wsId: string, { userId }: { userId: string }): Promise<void> {
+    const player = this.roomState.players.find((p) => p.userId === userId);
+    if (!player) return;
+
+    const connected = this.roomState.players.filter((p) => p.connected).map((p) => p.userId);
+    if (connected.length < 2) return;
+
+    const votes = new Set(this.roomState.restartVotes || []);
+    votes.add(userId);
+    this.roomState.restartVotes = Array.from(votes);
+
+    const allAgreed = connected.every((id) => votes.has(id));
+    if (allAgreed) {
+      this.doRestartRound();
+    }
 
     this.broadcastStateSync();
     await this.persistState();

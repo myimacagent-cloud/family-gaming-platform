@@ -37,6 +37,7 @@ export interface RoomState {
   winner: string | null;
   currentPlayerIndex: number;
   roundNumber: number;
+  restartVotes?: string[];
   // Game-specific state is stored in the `gameData` field
   gameData: unknown;
 }
@@ -56,6 +57,7 @@ export type ClientMessage =
     }
   | { type: 'make_move'; userId: string; move: unknown }
   | { type: 'restart_game'; userId: string }
+  | { type: 'restart_vote'; userId: string }
   | { type: 'request_state' }
   // Admin/lobby messages
   | { type: 'create_room'; userId: string; displayName: string; gameType: string }

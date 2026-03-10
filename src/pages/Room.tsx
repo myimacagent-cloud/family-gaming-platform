@@ -330,7 +330,7 @@ export default function Room() {
 
   const handleRestart = () => {
     if (connectionState !== 'connected') return;
-    sendMessage({ type: 'restart_game', userId });
+    sendMessage({ type: 'restart_vote', userId });
   };
 
   const copyRoomCode = () => {
@@ -361,6 +361,11 @@ export default function Room() {
   const myTurn = currentPlayer?.symbol === currentPlayerSymbol && roomState?.status === 'active';
   const isWaiting = roomState?.status === 'waiting';
   const isFinished = roomState?.status === 'finished' || roomState?.status === 'draw';
+
+  const restartVotes = roomState?.restartVotes || [];
+  const connectedPlayers = roomState?.players.filter((p) => p.connected) || [];
+  const restartVotesNeeded = Math.max(0, connectedPlayers.length - restartVotes.length);
+  const myRestartVote = restartVotes.includes(userId);
 
   const statusMessage = () => {
     if (isWaiting) return 'Waiting for opponent...';
@@ -499,10 +504,28 @@ export default function Room() {
           </div>
         )}
 
-        {isFinished && (
-          <button onClick={handleRestart} style={{ padding: '16px 40px', fontSize: '18px', fontWeight: 600, background: 'white', color: theme.accent, border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
-            Play Again
-          </button>
+        {roomState && roomState.players.length >= 2 && (
+          <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: '10px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={handleRestart}
+              disabled={connectionState !== 'connected' || myRestartVote}
+              style={{
+                padding: '12px 20px',
+                fontSize: '15px',
+                fontWeight: 800,
+                background: myRestartVote ? '#94a3b8' : '#16a34a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: myRestartVote ? 'default' : 'pointer',
+              }}
+            >
+              ⚡ Instant Restart ({myRestartVote ? 'Voted' : 'Vote'})
+            </button>
+            <div style={{ fontSize: 12, color: '#334155', fontWeight: 700 }}>
+              {restartVotesNeeded > 0 ? `${restartVotesNeeded} more vote${restartVotesNeeded === 1 ? '' : 's'} needed` : 'Restarting...'}
+            </div>
+          </div>
         )}
 
         <button onClick={() => navigate('/')} style={{ padding: '12px 30px', fontSize: '14px', fontWeight: 600, background: 'rgba(0,0,0,0.3)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '20px' }}>

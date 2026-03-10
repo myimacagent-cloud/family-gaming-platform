@@ -85,6 +85,19 @@ export default function Lobby() {
     setShowGameSelect(true);
   };
 
+  const handleRandomRoom = () => {
+    if (!displayName.trim()) {
+      alert('Please enter your display name!');
+      return;
+    }
+    if (games.length === 0) return;
+    safeSetStorage('displayName', displayName);
+    safeSetStorage('userId', safeGetStorage('userId') || crypto.randomUUID());
+    const randomGame = games[Math.floor(Math.random() * games.length)].id;
+    const roomCode = generateRoomCode();
+    navigate(`/room/${roomCode}`, { state: { gameType: randomGame } });
+  };
+
   const handleCreateRoom = () => {
     safeSetStorage('displayName', displayName);
     safeSetStorage('userId', safeGetStorage('userId') || crypto.randomUUID());
@@ -178,6 +191,9 @@ export default function Lobby() {
               );
             })}
           </div>
+          <button onClick={handleRandomRoom} style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: 700, background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '10px' }}>
+            🎲 Random Game Room
+          </button>
           <button onClick={handleCreateRoom} style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 600, background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '15px' }}>
             Create Room
           </button>
