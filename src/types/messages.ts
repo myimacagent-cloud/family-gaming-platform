@@ -14,6 +14,7 @@ export interface PublicPlayer {
   displayName: string;
   symbol: string;
   connected: boolean;
+  avatarId?: string;
 }
 
 // Internal player state (includes WebSocket refs)
@@ -54,14 +55,15 @@ export type ClientMessage =
       displayName: string; 
       roomCode: string;
       gameType?: string; // Optional - used for room creation
+      avatarId?: string;
     }
   | { type: 'make_move'; userId: string; move: unknown }
   | { type: 'restart_game'; userId: string }
   | { type: 'restart_vote'; userId: string }
   | { type: 'request_state' }
   // Admin/lobby messages
-  | { type: 'create_room'; userId: string; displayName: string; gameType: string }
-  | { type: 'join_room_code'; userId: string; displayName: string; roomCode: string };
+  | { type: 'create_room'; userId: string; displayName: string; gameType: string; avatarId?: string }
+  | { type: 'join_room_code'; userId: string; displayName: string; roomCode: string; avatarId?: string };
 
 // ============================================
 // Server -> Client Messages

@@ -155,6 +155,7 @@ export class GameRoom {
         displayName: p.displayName,
         symbol: p.symbol,
         connected: p.connected,
+        avatarId: p.avatarId,
       })),
       status: this.roomState.status,
       winner: this.roomState.winner,
@@ -176,6 +177,7 @@ export class GameRoom {
       displayName: p.displayName,
       symbol: p.symbol,
       connected: p.connected,
+      avatarId: p.avatarId,
     }));
     gameData.gameType = this.roomState.gameType;
     gameData.status = this.roomState.status;
@@ -258,8 +260,8 @@ export class GameRoom {
   private async handleJoinRoom(
     wsId: string,
     ws: WebSocket,
-    { userId, displayName, roomCode, gameType }: 
-    { userId: string; displayName: string; roomCode: string; gameType?: string }
+    { userId, displayName, roomCode, gameType, avatarId }: 
+    { userId: string; displayName: string; roomCode: string; gameType?: string; avatarId?: string }
   ): Promise<void> {
     // Check if player already exists (reconnecting)
     const existingPlayer = this.roomState.players.find(p => p.userId === userId);
@@ -268,6 +270,7 @@ export class GameRoom {
       existingPlayer.ws = ws;
       existingPlayer.wsId = wsId;
       existingPlayer.disconnectedAt = null;
+      if (avatarId) existingPlayer.avatarId = avatarId;
       this.connections.set(wsId, ws);
       
       this.sendToClient(ws, {
@@ -324,6 +327,7 @@ export class GameRoom {
       ws,
       wsId,
       disconnectedAt: null,
+      avatarId: avatarId || undefined,
     };
     
     this.roomState.players.push(newPlayer);

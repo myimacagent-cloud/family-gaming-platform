@@ -31,6 +31,7 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
 
   const userId = useRef(localStorage.getItem('userId') || crypto.randomUUID()).current;
   const displayName = useRef(localStorage.getItem('displayName') || 'Player').current;
+  const avatarId = useRef(localStorage.getItem('avatarId') || '').current;
 
   useEffect(() => {
     if (!localStorage.getItem('userId')) {
@@ -75,6 +76,7 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
         displayName,
         roomCode,
         ...(initialGameType ? { gameType: initialGameType } : {}),
+        ...(avatarId ? { avatarId } : {}),
       };
       socket.send(JSON.stringify(joinMsg));
 

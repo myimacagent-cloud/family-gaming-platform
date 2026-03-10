@@ -5,6 +5,20 @@ import pixelPlaygroundLogo from '../assets/pixel-playground-logo.svg';
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+const AVATAR_PACK_1 = [
+  'pixel-joystick','pixel-sword','pixel-shield','pixel-dice','pixel-trophy',
+  'pixel-rocket','pixel-gamepad','pixel-crown','pixel-ghost','pixel-planet'
+];
+const AVATAR_PACK_2 = [
+  'avatar-robot-blue','avatar-robot-pink','avatar-fox','avatar-panda','avatar-ninja',
+  'avatar-astronaut','avatar-wizard','avatar-pixel-girl','avatar-pixel-boy','avatar-alien',
+  'avatar-pixel-boy-black','avatar-pixel-girl-black'
+];
+
+function avatarSrc(id: string): string {
+  return `/avatars/${id}.svg`;
+}
+
 const GAME_EMOJIS: Record<string, string> = {
   tictactoe: '❌⭕',
   'tictactoe-3piece': '🧠❌⭕',
@@ -62,6 +76,7 @@ export default function Lobby() {
   const [selectedGameType, setSelectedGameType] = useState('');
   const [showGameSelect, setShowGameSelect] = useState(false);
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 768 : false));
+  const [selectedAvatarId, setSelectedAvatarId] = useState('avatar-robot-blue');
 
   const games = getGameList();
 
@@ -71,6 +86,8 @@ export default function Lobby() {
     if (games.length > 0) {
       setSelectedGameType(games[0].id);
     }
+    const savedAvatar = safeGetStorage('avatarId');
+    if (savedAvatar) setSelectedAvatarId(savedAvatar);
 
     const onResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', onResize);
@@ -92,6 +109,7 @@ export default function Lobby() {
     }
     if (games.length === 0) return;
     safeSetStorage('displayName', displayName);
+    safeSetStorage('avatarId', selectedAvatarId);
     safeSetStorage('userId', safeGetStorage('userId') || crypto.randomUUID());
     const randomGame = games[Math.floor(Math.random() * games.length)].id;
     const roomCode = generateRoomCode();
@@ -100,6 +118,7 @@ export default function Lobby() {
 
   const handleCreateRoom = () => {
     safeSetStorage('displayName', displayName);
+    safeSetStorage('avatarId', selectedAvatarId);
     safeSetStorage('userId', safeGetStorage('userId') || crypto.randomUUID());
     const roomCode = generateRoomCode();
     navigate(`/room/${roomCode}`, { state: { gameType: selectedGameType } });
@@ -115,6 +134,7 @@ export default function Lobby() {
       return;
     }
     safeSetStorage('displayName', displayName);
+    safeSetStorage('avatarId', selectedAvatarId);
     safeSetStorage('userId', safeGetStorage('userId') || crypto.randomUUID());
     navigate(`/room/${joinCode.toUpperCase()}`);
   };
@@ -213,6 +233,25 @@ export default function Lobby() {
         <p style={{ textAlign: 'center', color: '#666', marginBottom: '30px' }}>Play • Create • Challenge</p>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>Your Name</label>
         <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Enter your name" style={{ width: '100%', padding: '14px 18px', fontSize: '16px', border: '2px solid #e0e0e0', borderRadius: '12px', marginBottom: '25px', outline: 'none' }} />
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: '#333' }}>Avatar</label>
+        <div style={{ marginBottom: '18px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 10 }}>
+          <div style={{ fontSize: 12, color: '#475569', fontWeight: 700, marginBottom: 6 }}>Pack 1</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6, marginBottom: 8 }}>
+            {AVATAR_PACK_1.map((id) => (
+              <button key={id} onClick={() => setSelectedAvatarId(id)} style={{ border: selectedAvatarId === id ? '2px solid #6D7DFF' : '1px solid #cbd5e1', borderRadius: 8, padding: 2, background: '#fff', cursor: 'pointer' }}>
+                <img src={avatarSrc(id)} alt={id} style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: 6 }} />
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: '#475569', fontWeight: 700, marginBottom: 6 }}>Pack 2</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
+            {AVATAR_PACK_2.map((id) => (
+              <button key={id} onClick={() => setSelectedAvatarId(id)} style={{ border: selectedAvatarId === id ? '2px solid #6D7DFF' : '1px solid #cbd5e1', borderRadius: 8, padding: 2, background: '#fff', cursor: 'pointer' }}>
+                <img src={avatarSrc(id)} alt={id} style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: 6 }} />
+              </button>
+            ))}
+          </div>
+        </div>
         <button onClick={handleCreateClick} style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 600, background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '20px' }}>
           Create New Room
         </button>

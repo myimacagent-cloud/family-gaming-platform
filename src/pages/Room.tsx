@@ -198,6 +198,10 @@ type StatsByUser = Record<string, StatsByGame>;
 const DEFAULT_STATS: StatLine = { wins: 0, draws: 0, losses: 0 };
 const STATS_KEY = 'fgp.userStats.v1';
 
+function avatarSrc(id?: string): string | null {
+  return id ? `/avatars/${id}.svg` : null;
+}
+
 function getStoredStats(): StatsByUser {
   try {
     const raw = localStorage.getItem(STATS_KEY);
@@ -451,8 +455,12 @@ export default function Room() {
           <div style={{ display: 'flex', gap: '40px', padding: '20px 40px', background: 'rgba(255,255,255,0.95)', borderRadius: '15px', alignItems: 'center' }}>
             {roomState.players.map((p) => (
               <div key={p.userId} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', opacity: p.connected ? 1 : 0.5 }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold', background: p.symbol === 'X' ? theme.accent : theme.accent2, color: 'white', boxShadow: p.userId === userId ? '0 0 0 4px #ffeb3b' : 'none' }}>
-                  {p.symbol}
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold', background: p.symbol === 'X' ? theme.accent : theme.accent2, color: 'white', boxShadow: p.userId === userId ? '0 0 0 4px #ffeb3b' : 'none', overflow: 'hidden' }}>
+                  {avatarSrc((p as any).avatarId) ? (
+                    <img src={avatarSrc((p as any).avatarId)!} alt={p.displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    p.symbol
+                  )}
                 </div>
                 <span style={{ fontSize: '14px', fontWeight: 600 }}>{p.displayName}</span>
                 <span style={{ fontSize: '12px', color: p.connected ? '#10b981' : '#ef4444' }}>{p.connected ? 'Online' : 'Offline'}</span>
