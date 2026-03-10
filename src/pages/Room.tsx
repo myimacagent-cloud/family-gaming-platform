@@ -190,6 +190,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends after all cards are played.',
     differences: '2-player adaptation of classic Hearts.',
   },
+  makeaword: {
+    howToPlay: 'Player 1 chooses first letter, Player 2 chooses last letter, then players submit words.',
+    scoring: 'First valid word wins the round.',
+    gameEnd: 'Ends immediately when someone submits a valid word.',
+    differences: 'Custom speed-word duel format.',
+  },
 };
 
 type StatLine = {
