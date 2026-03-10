@@ -178,6 +178,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends when a player empties hand or both players are blocked.',
     differences: 'Fast 2-player draw dominoes with side-select play controls.',
   },
+  spades: {
+    howToPlay: 'Bid tricks, follow suit, and use spades as trump.',
+    scoring: 'Closest to your bid wins this quick round version.',
+    gameEnd: 'Ends after all tricks are played.',
+    differences: '2-player adaptation with bid-accuracy winner logic.',
+  },
 };
 
 type StatLine = {
