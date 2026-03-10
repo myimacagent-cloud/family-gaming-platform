@@ -123,12 +123,12 @@ export default function Lobby() {
     navigate(`/room/${roomCode}`, { state: { gameType: randomGame } });
   };
 
-  const handleCreateRoom = () => {
+  const handleCreateRoom = (gameId?: string) => {
     safeSetStorage('displayName', displayName);
     safeSetStorage('avatarId', selectedAvatarId);
     safeSetStorage('userId', safeGetStorage('userId') || crypto.randomUUID());
     const roomCode = generateRoomCode();
-    navigate(`/room/${roomCode}`, { state: { gameType: selectedGameType } });
+    navigate(`/room/${roomCode}`, { state: { gameType: gameId || selectedGameType } });
   };
 
   const handleJoin = () => {
@@ -155,28 +155,29 @@ export default function Lobby() {
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)' }}>
         <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '30px', maxWidth: '1280px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
           <h1 style={{ textAlign: 'center', marginBottom: '10px', color: '#6D7DFF' }}>🕹️ Select a Pixel Playground Game</h1>
-          <p style={{ textAlign: 'center', color: '#666', marginBottom: '25px' }}>Pick from tile-style games below (3 across).</p>
+          <p style={{ textAlign: 'center', color: '#666', marginBottom: '12px' }}>Tap any tile to instantly create that game room.</p>
+          <button onClick={handleRandomRoom} style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: 700, background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '18px' }}>
+            🎲 Random Game Room
+          </button>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(5, minmax(0, 1fr))', gap: '16px', marginBottom: '30px' }}>
             {games.map((game) => {
               const emoji = GAME_EMOJIS[game.id] ?? '🎲';
-              const isSelected = selectedGameType === game.id;
-
               return (
                 <div
                   key={game.id}
-                  onClick={() => setSelectedGameType(game.id)}
+                  onClick={() => handleCreateRoom(game.id)}
                   style={{
                     padding: '16px',
                     borderRadius: '14px',
-                    border: isSelected ? '3px solid #667eea' : '2px solid #e0e0e0',
-                    background: isSelected ? 'rgba(102, 126, 234, 0.12)' : 'white',
+                    border: '2px solid #e0e0e0',
+                    background: 'white',
                     cursor: 'pointer',
                     textAlign: 'left',
                     aspectRatio: '1 / 1',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    boxShadow: isSelected ? '0 6px 18px rgba(102, 126, 234, 0.25)' : '0 2px 10px rgba(0,0,0,0.06)',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
                     transition: 'all 0.15s ease',
                   }}
                 >
@@ -198,7 +199,6 @@ export default function Lobby() {
                     }}
                     title={game.displayName}
                   >
-                    {isSelected ? '✅ ' : ''}
                     {game.displayName}
                   </div>
                   <div
@@ -218,12 +218,6 @@ export default function Lobby() {
               );
             })}
           </div>
-          <button onClick={handleRandomRoom} style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: 700, background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '10px' }}>
-            🎲 Random Game Room
-          </button>
-          <button onClick={handleCreateRoom} style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 600, background: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '15px' }}>
-            Create Room
-          </button>
           <button onClick={handleBack} style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: 600, background: '#f0f0f0', color: '#333', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>
             Back
           </button>
