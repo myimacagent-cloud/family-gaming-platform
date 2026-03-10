@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "smoke:init": "node scripts/smoke-init-check.mjs",
     "preview": "vite preview",
-    "deploy": "wrangler deploy",
+    "deploy": "npm run smoke:init && wrangler deploy",
     "deploy:ui": "wrangler pages deploy dist"
   },
   "dependencies": {

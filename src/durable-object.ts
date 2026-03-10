@@ -186,6 +186,45 @@ export class GameRoom {
     this.roomState.winner = gameData.winner;
   }
 
+  private shouldAutoReinitializeGameData(gameData: unknown): boolean {
+    if (!gameData || typeof gameData !== 'object') return true;
+
+    const data = gameData as Record<string, unknown>;
+
+    // Common failure pattern for card/tile games: hands exist but are empty for all players.
+    if (data.hands && typeof data.hands === 'object') {
+      const handValues = Object.values(data.hands as Record<string, unknown>);
+      if (handValues.length > 0 && handValues.every((v) => Array.isArray(v) && v.length === 0)) {
+        return true;
+      }
+    }
+
+    // Similar pattern for board-initialized games.
+    if (data.boards && typeof data.boards === 'object') {
+      const boardValues = Object.values(data.boards as Record<string, unknown>);
+      if (boardValues.length > 0 && boardValues.every((v) => Array.isArray(v) && v.length === 0)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private ensureGameInitializedForActiveRoom(): void {
+    const gameDef = this.getGameDefinition();
+    if (!gameDef) return;
+
+    const connectedCount = this.roomState.players.filter((p) => p.connected).length;
+    if (connectedCount < gameDef.minPlayers) return;
+
+    // If game is active but game data is obviously empty/uninitialized, restart-init safely.
+    if (this.roomState.status === 'active' && this.shouldAutoReinitializeGameData(this.roomState.gameData)) {
+      this.roomState.gameData = gameDef.createRestartState(this.roomState.gameData as BaseGameState);
+      this.syncRoomMetadataFromGameData(this.roomState.gameData as BaseGameState);
+      this.syncGameDataMetadata();
+    }
+  }
+
   private sendToClient(ws: WebSocket, message: ServerMessage): void {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message));
@@ -290,8 +329,13 @@ export class GameRoom {
     
     if (connectedCount >= minPlayers && this.roomState.status === 'waiting') {
       this.roomState.status = 'active';
+      if (currentGameDef) {
+        this.roomState.gameData = currentGameDef.createRestartState(this.roomState.gameData as BaseGameState);
+        this.syncRoomMetadataFromGameData(this.roomState.gameData as BaseGameState);
+      }
     }
 
+    this.ensureGameInitializedForActiveRoom();
     this.syncGameDataMetadata();
 
     this.sendToClient(ws, {
@@ -320,6 +364,7 @@ export class GameRoom {
     }
 
     // Keep game metadata synchronized so validation logic has current players/turn/status.
+    this.ensureGameInitializedForActiveRoom();
     this.syncGameDataMetadata();
 
     const validation = gameDef.validateMove(
