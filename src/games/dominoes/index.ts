@@ -5,37 +5,52 @@ import { DominoesBoard } from './Board';
 const GAME_ID = 'dominoes';
 
 function makeSet(): string[] {
-  const tiles: string[] = [];
+  const dominoes: string[] = [];
   for (let a = 0; a <= 6; a++) {
-    for (let b = a; b <= 6; b++) tiles.push(`${a}-${b}`);
+    for (let b = a; b <= 6; b++) dominoes.push(`${a}-${b}`);
   }
-  for (let i = tiles.length - 1; i > 0; i--) {
+  for (let i = dominoes.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+    [dominoes[i], dominoes[j]] = [dominoes[j], dominoes[i]];
   }
-  return tiles;
+  return dominoes;
 }
 
-function parseTile(t: string): [number, number] {
+function parseDomino(t: string): [number, number] {
   const [a, b] = t.split('-').map(Number);
   return [a, b];
 }
 
 function pipSum(hand: string[]): number {
   return hand.reduce((s, t) => {
-    const [a, b] = parseTile(t);
+    const [a, b] = parseDomino(t);
     return s + a + b;
   }, 0);
 }
 
-function canPlayTile(t: string, left: number | null, right: number | null): boolean {
+function canPlayDomino(t: string, left: number | null, right: number | null): boolean {
   if (left === null || right === null) return true;
-  const [a, b] = parseTile(t);
+  const [a, b] = parseDomino(t);
   return a === left || b === left || a === right || b === right;
 }
 
 function canAnyPlay(hand: string[], left: number | null, right: number | null): boolean {
-  return hand.some((t) => canPlayTile(t, left, right));
+  return hand.some((t) => canPlayDomino(t, left, right));
+}
+
+function dealForSymbols(p1: string, p2: string): Pick<DominoesState, 'boneyard' | 'hands' | 'leftEnd' | 'rightEnd' | 'chain' | 'lastAction'> {
+  const set = makeSet();
+  const h1 = set.splice(0, 7);
+  const h2 = set.splice(0, 7);
+
+  return {
+    boneyard: set,
+    hands: { [p1]: h1, [p2]: h2 },
+    leftEnd: null,
+    rightEnd: null,
+    chain: [],
+    lastAction: 'Play any domino to start the chain.',
+  };
 }
 
 function ensurePrepared(state: DominoesState): DominoesState {
@@ -44,19 +59,12 @@ function ensurePrepared(state: DominoesState): DominoesState {
   const p2 = state.players[1].symbol;
   if ((state.hands[p1]?.length ?? 0) > 0 || (state.hands[p2]?.length ?? 0) > 0) return state;
 
-  const set = makeSet();
-  const h1 = set.splice(0, 7);
-  const h2 = set.splice(0, 7);
+  const dealt = dealForSymbols(p1, p2);
 
   return {
     ...state,
-    boneyard: set,
-    hands: { [p1]: h1, [p2]: h2 },
-    leftEnd: null,
-    rightEnd: null,
-    chain: [],
+    ...dealt,
     currentPlayerIndex: 0,
-    lastAction: 'Play any tile to start the chain.',
   };
 }
 
@@ -78,36 +86,29 @@ function resolveBlocked(state: DominoesState): DominoesState {
 }
 
 function createInitialState(_roomCode: string): DominoesState {
+  const dealt = dealForSymbols('X', 'O');
   return {
     gameType: GAME_ID,
     players: [],
     status: 'waiting',
     winner: null,
     currentPlayerIndex: 0,
-    boneyard: [],
-    hands: {},
-    leftEnd: null,
-    rightEnd: null,
-    chain: [],
-    lastAction: 'Play classic draw dominoes.',
+    ...dealt,
   };
 }
 
 function createRestartState(currentState: DominoesState): DominoesState {
   const p1 = currentState.players[0]?.symbol || 'X';
   const p2 = currentState.players[1]?.symbol || 'O';
-  return ensurePrepared({
+  const dealt = dealForSymbols(p1, p2);
+  return {
     ...currentState,
     status: 'active',
     winner: null,
     currentPlayerIndex: 0,
-    boneyard: [],
-    hands: { [p1]: [], [p2]: [] },
-    leftEnd: null,
-    rightEnd: null,
-    chain: [],
-    lastAction: 'New round started.',
-  });
+    ...dealt,
+    lastAction: 'New round started. Dominoes dealt.',
+  };
 }
 
 function validateMove(inputState: DominoesState, move: DominoesMove, playerSymbol: string): MoveValidation {
@@ -121,10 +122,10 @@ function validateMove(inputState: DominoesState, move: DominoesMove, playerSymbo
     return { valid: true };
   }
 
-  if (!move.tile) return { valid: false, error: 'No tile selected' };
+  if (!move.tile) return { valid: false, error: 'No domino selected' };
   const hand = state.hands[playerSymbol] || [];
-  if (!hand.includes(move.tile)) return { valid: false, error: 'Tile not in hand' };
-  if (!canPlayTile(move.tile, state.leftEnd, state.rightEnd)) return { valid: false, error: 'Tile does not match chain ends' };
+  if (!hand.includes(move.tile)) return { valid: false, error: 'Domino not in hand' };
+  if (!canPlayDomino(move.tile, state.leftEnd, state.rightEnd)) return { valid: false, error: 'Domino does not match chain ends' };
   if (state.leftEnd !== null && state.rightEnd !== null && !move.side) return { valid: false, error: 'Choose left or right side' };
 
   return { valid: true };
@@ -136,8 +137,8 @@ function applyMove(inputState: DominoesState, move: DominoesMove, playerSymbol: 
 
   if (move.type === 'draw') {
     const boneyard = [...state.boneyard];
-    const tile = boneyard.shift();
-    if (tile) hands[playerSymbol].push(tile);
+    const domino = boneyard.shift();
+    if (domino) hands[playerSymbol].push(domino);
     state = {
       ...state,
       boneyard,
@@ -148,10 +149,10 @@ function applyMove(inputState: DominoesState, move: DominoesMove, playerSymbol: 
     return resolveBlocked(state);
   }
 
-  const tile = move.tile!;
-  const [a, b] = parseTile(tile);
+  const domino = move.tile!;
+  const [a, b] = parseDomino(domino);
 
-  const idx = hands[playerSymbol].indexOf(tile);
+  const idx = hands[playerSymbol].indexOf(domino);
   if (idx >= 0) hands[playerSymbol].splice(idx, 1);
 
   let left = state.leftEnd;
@@ -161,15 +162,15 @@ function applyMove(inputState: DominoesState, move: DominoesMove, playerSymbol: 
   if (left === null || right === null) {
     left = a;
     right = b;
-    chain.push(tile);
+    chain.push(domino);
   } else if (move.side === 'left') {
     if (a === left) left = b;
     else if (b === left) left = a;
-    chain.unshift(tile);
+    chain.unshift(domino);
   } else {
     if (a === right) right = b;
     else if (b === right) right = a;
-    chain.push(tile);
+    chain.push(domino);
   }
 
   if (hands[playerSymbol].length === 0) {
@@ -181,7 +182,7 @@ function applyMove(inputState: DominoesState, move: DominoesMove, playerSymbol: 
       chain,
       status: 'finished',
       winner: playerSymbol,
-      lastAction: `${state.players.find((p) => p.symbol === playerSymbol)?.displayName || 'Player'} played all tiles and won!`,
+      lastAction: `${state.players.find((p) => p.symbol === playerSymbol)?.displayName || 'Player'} played all dominoes and won!`,
     };
   }
 
@@ -192,7 +193,7 @@ function applyMove(inputState: DominoesState, move: DominoesMove, playerSymbol: 
     rightEnd: right,
     chain,
     currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,
-    lastAction: `${state.players.find((p) => p.symbol === playerSymbol)?.displayName || 'Player'} played ${tile}.`,
+    lastAction: `${state.players.find((p) => p.symbol === playerSymbol)?.displayName || 'Player'} played ${domino}.`,
   };
 
   return resolveBlocked(state);
@@ -207,7 +208,7 @@ function checkGameEnd(state: DominoesState): { ended: boolean; winner: string | 
 export const dominoesGame: GameDefinition<DominoesState, DominoesMove> = {
   id: GAME_ID,
   displayName: '🁢 Dominoes',
-  description: 'Match ends, draw when blocked, and play all tiles to win.',
+  description: 'Match ends, draw when blocked, and play all dominoes to win.',
   minPlayers: 2,
   maxPlayers: 2,
   createInitialState,
