@@ -19,6 +19,8 @@ function avatarSrc(id: string): string {
   return `/avatars/${id}.svg`;
 }
 
+const ALL_AVATARS = [...AVATAR_PACK_1, ...AVATAR_PACK_2];
+
 const GAME_EMOJIS: Record<string, string> = {
   tictactoe: '❌⭕',
   'tictactoe-3piece': '🧠❌⭕',
@@ -93,6 +95,11 @@ export default function Lobby() {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+  const handleRandomAvatar = () => {
+    const next = ALL_AVATARS[Math.floor(Math.random() * ALL_AVATARS.length)];
+    if (next) setSelectedAvatarId(next);
+  };
 
   const handleCreateClick = () => {
     if (!displayName.trim()) {
@@ -234,8 +241,9 @@ export default function Lobby() {
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>Your Name</label>
         <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Enter your name" style={{ width: '100%', padding: '14px 18px', fontSize: '16px', border: '2px solid #e0e0e0', borderRadius: '12px', marginBottom: '25px', outline: 'none' }} />
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: '#333' }}>Avatar</label>
+        <button onClick={handleRandomAvatar} style={{ width: '100%', padding: '10px', fontSize: '14px', fontWeight: 700, background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', marginBottom: '10px' }}>🎲 Random Avatar</button>
         <div style={{ marginBottom: '18px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 10 }}>
-          <div style={{ fontSize: 12, color: '#475569', fontWeight: 700, marginBottom: 6 }}>Pack 1</div>
+          <div style={{ fontSize: 12, color: '#475569', fontWeight: 700, marginBottom: 6 }}>Pixels</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6, marginBottom: 8 }}>
             {AVATAR_PACK_1.map((id) => (
               <button key={id} onClick={() => setSelectedAvatarId(id)} style={{ border: selectedAvatarId === id ? '2px solid #6D7DFF' : '1px solid #cbd5e1', borderRadius: 8, padding: 2, background: '#fff', cursor: 'pointer' }}>
@@ -243,7 +251,7 @@ export default function Lobby() {
               </button>
             ))}
           </div>
-          <div style={{ fontSize: 12, color: '#475569', fontWeight: 700, marginBottom: 6 }}>Pack 2</div>
+          <div style={{ fontSize: 12, color: '#475569', fontWeight: 700, marginBottom: 6 }}>Characters</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
             {AVATAR_PACK_2.map((id) => (
               <button key={id} onClick={() => setSelectedAvatarId(id)} style={{ border: selectedAvatarId === id ? '2px solid #6D7DFF' : '1px solid #cbd5e1', borderRadius: 8, padding: 2, background: '#fff', cursor: 'pointer' }}>
