@@ -196,6 +196,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends immediately when someone submits a valid word.',
     differences: 'Custom speed-word duel format.',
   },
+  dancebattles: {
+    howToPlay: 'Each player submits a dance move every round.',
+    scoring: 'Best move power each round earns 1 point.',
+    gameEnd: 'After 5 rounds, highest score wins.',
+    differences: 'Custom family-friendly move battle format with suggested moves.',
+  },
 };
 
 type StatLine = {
@@ -291,6 +297,7 @@ export default function Room() {
       themeKey === 'nightNeon'
         ? '0 0 0 1px rgba(236,72,153,0.55), 0 0 18px rgba(34,211,238,0.65), 0 0 34px rgba(236,72,153,0.45), inset 0 0 20px rgba(34,211,238,0.12)'
         : `0 12px 30px ${theme.accent}33`,
+    animation: themeKey === 'nightNeon' ? 'neonPulse 2.2s ease-in-out infinite' : undefined,
   } as const;
 
   const roomLink = useMemo(() => {
@@ -620,6 +627,8 @@ export default function Room() {
           </div>
         </div>
       )}
+
+      <style>{`@keyframes neonPulse { 0% { box-shadow: 0 0 0 1px rgba(236,72,153,0.45), 0 0 14px rgba(34,211,238,0.45), 0 0 26px rgba(236,72,153,0.28), inset 0 0 14px rgba(34,211,238,0.08); } 50% { box-shadow: 0 0 0 1px rgba(236,72,153,0.75), 0 0 24px rgba(34,211,238,0.88), 0 0 42px rgba(236,72,153,0.58), inset 0 0 24px rgba(34,211,238,0.2); } 100% { box-shadow: 0 0 0 1px rgba(236,72,153,0.45), 0 0 14px rgba(34,211,238,0.45), 0 0 26px rgba(236,72,153,0.28), inset 0 0 14px rgba(34,211,238,0.08); } }`}</style>
 
       <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
         <img
