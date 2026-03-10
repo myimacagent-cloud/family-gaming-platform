@@ -31,18 +31,12 @@ function cardLabel(card: string): string {
   return `${r}${su}`;
 }
 
-function ensurePrepared(state: SpadesState): SpadesState {
-  if (state.players.length < 2) return state;
-  const a = state.players[0].symbol;
-  const b = state.players[1].symbol;
-  if ((state.hands[a]?.length ?? 0) > 0 || (state.hands[b]?.length ?? 0) > 0) return state;
 
+function dealForSymbols(a: string, b: string): Pick<SpadesState, 'deck' | 'hands' | 'bids' | 'tricksWon' | 'currentTrick' | 'leadSuit' | 'spadesBroken' | 'trickNumber' | 'lastAction'> {
   const deck = makeDeck();
   const aHand = deck.splice(0, 13);
   const bHand = deck.splice(0, 13);
-
   return {
-    ...state,
     deck,
     hands: { [a]: aHand, [b]: bHand },
     bids: { [a]: null, [b]: null },
@@ -51,8 +45,21 @@ function ensurePrepared(state: SpadesState): SpadesState {
     leadSuit: null,
     spadesBroken: false,
     trickNumber: 1,
-    currentPlayerIndex: 0,
     lastAction: 'Place your bids (0-13), then play tricks.',
+  };
+}
+
+function ensurePrepared(state: SpadesState): SpadesState {
+  if (state.players.length < 2) return state;
+  const a = state.players[0].symbol;
+  const b = state.players[1].symbol;
+  if ((state.hands[a]?.length ?? 0) > 0 || (state.hands[b]?.length ?? 0) > 0) return state;
+
+  const dealt = dealForSymbols(a, b);
+  return {
+    ...state,
+    ...dealt,
+    currentPlayerIndex: 0,
   };
 }
 
@@ -95,20 +102,14 @@ function winnerOfTrick(trick: Array<{ symbol: string; card: string }>, leadSuit:
 }
 
 function createInitialState(_roomCode: string): SpadesState {
+  const dealt = dealForSymbols('X', 'O');
   return {
     gameType: GAME_ID,
     players: [],
     status: 'waiting',
     winner: null,
     currentPlayerIndex: 0,
-    deck: [],
-    hands: {},
-    bids: {},
-    tricksWon: {},
-    currentTrick: [],
-    leadSuit: null,
-    spadesBroken: false,
-    trickNumber: 1,
+    ...dealt,
     lastAction: 'Bid and play trick-taking Spades.',
   };
 }
@@ -116,20 +117,13 @@ function createInitialState(_roomCode: string): SpadesState {
 function createRestartState(currentState: SpadesState): SpadesState {
   const a = currentState.players[0]?.symbol || 'X';
   const b = currentState.players[1]?.symbol || 'O';
-  const deck = makeDeck();
+  const dealt = dealForSymbols(a, b);
   return {
     ...currentState,
     status: 'active',
     winner: null,
     currentPlayerIndex: 0,
-    deck: deck.slice(26),
-    hands: { [a]: deck.slice(0, 13), [b]: deck.slice(13, 26) },
-    bids: { [a]: null, [b]: null },
-    tricksWon: { [a]: 0, [b]: 0 },
-    currentTrick: [],
-    leadSuit: null,
-    spadesBroken: false,
-    trickNumber: 1,
+    ...dealt,
     lastAction: 'New round started. Place bids.',
   };
 }

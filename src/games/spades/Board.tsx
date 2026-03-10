@@ -25,20 +25,24 @@ function suitColor(suit: 'S' | 'H' | 'D' | 'C'): string {
   return suit === 'H' || suit === 'D' ? '#dc2626' : '#111827';
 }
 
-export function SpadesBoard({ state, mySymbol, onMove, disabled }: SpadesBoardProps) {
+export function SpadesBoard({ state, mySymbol, myPlayerId, onMove, disabled }: SpadesBoardProps) {
+  const meById = state.players.find((p) => p.userId === myPlayerId);
+  const resolvedMySymbol = mySymbol || meById?.symbol || Object.keys(state.hands || {})[0] || '';
+  const oppSymbol = Object.keys(state.hands || {}).find((s) => s !== resolvedMySymbol) || '';
+
   const isFinished = state.status === 'finished' || state.status === 'draw';
-  const myTurn = state.players[state.currentPlayerIndex]?.symbol === mySymbol && !disabled && !isFinished;
+  const myTurn = state.players[state.currentPlayerIndex]?.symbol === resolvedMySymbol && !disabled && !isFinished;
 
-  const me = state.players.find((p) => p.symbol === mySymbol);
-  const opp = state.players.find((p) => p.symbol !== mySymbol);
+  const me = state.players.find((p) => p.symbol === resolvedMySymbol) || meById;
+  const opp = state.players.find((p) => p.symbol === oppSymbol) || state.players.find((p) => p.symbol !== resolvedMySymbol);
 
-  const myHand = state.hands?.[mySymbol] || [];
-  const oppCount = opp ? state.hands?.[opp.symbol]?.length ?? 0 : 0;
+  const myHand = state.hands?.[resolvedMySymbol] || [];
+  const oppCount = oppSymbol ? state.hands?.[oppSymbol]?.length ?? 0 : 0;
 
-  const myBid = state.bids?.[mySymbol];
-  const oppBid = opp ? state.bids?.[opp.symbol] : null;
-  const myTricks = state.tricksWon?.[mySymbol] ?? 0;
-  const oppTricks = opp ? state.tricksWon?.[opp.symbol] ?? 0 : 0;
+  const myBid = state.bids?.[resolvedMySymbol];
+  const oppBid = oppSymbol ? state.bids?.[oppSymbol] : null;
+  const myTricks = state.tricksWon?.[resolvedMySymbol] ?? 0;
+  const oppTricks = oppSymbol ? state.tricksWon?.[oppSymbol] ?? 0 : 0;
 
   const biddingPhase = myBid === null || oppBid === null;
   const [bidValue, setBidValue] = useState(4);
