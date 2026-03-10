@@ -162,15 +162,23 @@ function applyMove(inputState: DominoesState, move: DominoesMove, playerSymbol: 
   if (left === null || right === null) {
     left = a;
     right = b;
-    chain.push(domino);
+    chain.push(`${a}-${b}`);
   } else if (move.side === 'left') {
-    if (a === left) left = b;
-    else if (b === left) left = a;
-    chain.unshift(domino);
+    if (a === left) {
+      left = b;
+      chain.unshift(`${b}-${a}`); // orient so connected side is inward
+    } else if (b === left) {
+      left = a;
+      chain.unshift(`${a}-${b}`); // orient so connected side is inward
+    }
   } else {
-    if (a === right) right = b;
-    else if (b === right) right = a;
-    chain.push(domino);
+    if (a === right) {
+      right = b;
+      chain.push(`${a}-${b}`); // connected side on left
+    } else if (b === right) {
+      right = a;
+      chain.push(`${b}-${a}`); // connected side on left
+    }
   }
 
   if (hands[playerSymbol].length === 0) {
