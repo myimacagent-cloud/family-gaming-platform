@@ -184,6 +184,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'Ends after all tricks are played.',
     differences: '2-player adaptation with bid-accuracy winner logic.',
   },
+  hearts: {
+    howToPlay: 'Play tricks and avoid hearts + the Queen of Spades points.',
+    scoring: 'Lowest total points wins.',
+    gameEnd: 'Ends after all cards are played.',
+    differences: '2-player adaptation of classic Hearts.',
+  },
 };
 
 type StatLine = {

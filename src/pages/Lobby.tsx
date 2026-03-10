@@ -45,6 +45,7 @@ const GAME_EMOJIS: Record<string, string> = {
   bingo: '🎯🔢',
   dominoes: '🁢🁫',
   spades: '♠️🃏',
+  hearts: '♥️🃏',
 };
 
 function safeGetStorage(key: string): string | null {
