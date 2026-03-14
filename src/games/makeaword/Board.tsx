@@ -7,6 +7,8 @@ interface MakeAWordBoardProps extends GameBoardProps<MakeAWordState> {}
 export function MakeAWordBoard({ state, mySymbol, onMove, disabled }: MakeAWordBoardProps) {
   const isFinished = state.status === 'finished' || state.status === 'draw';
   const myTurn = state.players[state.currentPlayerIndex]?.symbol === mySymbol && !disabled && !isFinished;
+  const lettersRevealed = state.phase === 'make_words' && !!state.letters.first && !!state.letters.last;
+  const canTypeWord = lettersRevealed && !disabled && !isFinished;
 
   const [letterInput, setLetterInput] = useState('');
   const [wordInput, setWordInput] = useState('');
@@ -19,7 +21,7 @@ export function MakeAWordBoard({ state, mySymbol, onMove, disabled }: MakeAWordB
   };
 
   const submitWord = () => {
-    if (!myTurn) return;
+    if (!canTypeWord) return;
     const move: MakeAWordMove = { type: 'submit_word', word: wordInput };
     onMove(move);
     setWordInput('');
@@ -32,8 +34,8 @@ export function MakeAWordBoard({ state, mySymbol, onMove, disabled }: MakeAWordB
       </div>
 
       <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontWeight: 800 }}>First letter: {state.letters.first ?? '—'}</span>
-        <span style={{ fontWeight: 800 }}>Last letter: {state.letters.last ?? '—'}</span>
+        <span style={{ fontWeight: 800 }}>First letter: {lettersRevealed ? state.letters.first : '❔'}</span>
+        <span style={{ fontWeight: 800 }}>Last letter: {lettersRevealed ? state.letters.last : '❔'}</span>
         {state.winningWord && <span style={{ fontWeight: 800, color: '#16a34a' }}>Winning word: {state.winningWord}</span>}
       </div>
 
@@ -60,14 +62,14 @@ export function MakeAWordBoard({ state, mySymbol, onMove, disabled }: MakeAWordB
           <input
             value={wordInput}
             onChange={(e) => setWordInput(e.target.value)}
-            placeholder="Type your word"
+            placeholder="Type a 4+ letter English word"
             style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #cbd5e1', fontSize: 16, width: 240 }}
-            disabled={!myTurn}
+            disabled={!canTypeWord}
           />
           <button
             onClick={submitWord}
-            disabled={!myTurn}
-            style={{ border: 'none', borderRadius: 10, padding: '10px 14px', background: myTurn ? '#16a34a' : '#94a3b8', color: '#fff', fontWeight: 800, cursor: myTurn ? 'pointer' : 'default' }}
+            disabled={!canTypeWord}
+            style={{ border: 'none', borderRadius: 10, padding: '10px 14px', background: canTypeWord ? '#16a34a' : '#94a3b8', color: '#fff', fontWeight: 800, cursor: canTypeWord ? 'pointer' : 'default' }}
           >
             Submit Word
           </button>
@@ -95,9 +97,11 @@ export function MakeAWordBoard({ state, mySymbol, onMove, disabled }: MakeAWordB
             : state.status === 'draw'
               ? 'Draw'
               : 'Opponent won'
-          : myTurn
-            ? 'Your turn'
-            : 'Opponent turn'}
+          : state.phase === 'make_words'
+            ? 'Letters revealed — both players can type now'
+            : myTurn
+              ? 'Your turn'
+              : 'Opponent turn'}
       </div>
     </div>
   );

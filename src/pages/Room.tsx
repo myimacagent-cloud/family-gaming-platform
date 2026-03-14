@@ -58,6 +58,20 @@ const THEME_PALETTES: Record<string, ThemePalette> = {
   forestQuest: { name: 'Forest Quest', bg: 'linear-gradient(135deg, #14532D 0%, #4D7C0F 100%)', accent: '#166534', accent2: '#65A30D', textOnAccent: '#ffffff' },
 };
 
+type ThemePixel = { x: number; y: number; c: string; d: number };
+
+const THEME_PIXELS: Record<string, ThemePixel[]> = Object.fromEntries(
+  Object.entries(THEME_PALETTES).map(([key, palette]) => [
+    key,
+    NEON_PIXELS.map((p, i) => ({
+      x: p.x,
+      y: p.y,
+      d: p.d,
+      c: i % 2 === 0 ? palette.accent : palette.accent2,
+    })),
+  ]),
+) as Record<string, ThemePixel[]>;
+
 type RulesInfo = {
   howToPlay: string;
   scoring: string;
@@ -211,16 +225,16 @@ const GAME_RULES: Record<string, RulesInfo> = {
     differences: '2-player adaptation of classic Hearts.',
   },
   makeaword: {
-    howToPlay: 'Player 1 chooses first letter, Player 2 chooses last letter, then players submit words.',
-    scoring: 'First valid word wins the round.',
+    howToPlay: 'Player 1 picks first letter and Player 2 picks last letter. Letters stay hidden until both are locked, then both players can type.',
+    scoring: 'First valid English dictionary word (4+ letters) wins the round.',
     gameEnd: 'Ends immediately when someone submits a valid word.',
-    differences: 'Custom speed-word duel format.',
+    differences: 'Fast head-to-head word race with hidden letter reveal.',
   },
   dancebattles: {
-    howToPlay: 'Each player submits a dance move every round.',
-    scoring: 'Best move power each round earns 1 point.',
-    gameEnd: 'After 5 rounds, highest score wins.',
-    differences: 'Custom family-friendly move battle format with suggested moves.',
+    howToPlay: 'Press arrow keys when falling arrows reach the hit zone.',
+    scoring: 'On-target hit = 5 points, close hit = 2 points, miss/far = 0 points.',
+    gameEnd: 'At end of song, highest score wins.',
+    differences: 'Rhythm-style duel with live timing windows and streaks.',
   },
 };
 
@@ -609,31 +623,73 @@ export default function Room() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ width: 'min(640px, 96vw)', maxHeight: '82vh', overflow: 'auto', background: 'white', borderRadius: 14, padding: 16 }}
+            style={{ position: 'relative', width: 'min(640px, 96vw)', maxHeight: '82vh', overflow: 'auto', background: 'white', borderRadius: 14, padding: 16 }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <h3 style={{ margin: 0, color: '#1f2937' }}>🎨 Customize Theme</h3>
-              <button onClick={() => setShowCustomize(false)} style={{ border: 'none', background: '#e5e7eb', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 700 }}>Close</button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
-              {Object.entries(THEME_PALETTES).map(([key, p]) => (
-                <button
-                  key={key}
-                  onClick={() => setThemeKey(key)}
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.45 }}>
+              {(THEME_PIXELS[themeKey] || []).map((px, i) => (
+                <span
+                  key={`customize-px-${i}`}
                   style={{
-                    textAlign: 'left',
-                    border: themeKey === key ? `3px solid ${p.accent}` : '1px solid #cbd5e1',
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    background: '#fff',
-                    padding: 0,
+                    position: 'absolute',
+                    left: `${px.x}%`,
+                    top: `${px.y}%`,
+                    width: 5,
+                    height: 5,
+                    background: px.c,
+                    boxShadow: `0 0 8px ${px.c}, 0 0 12px ${px.c}`,
+                    borderRadius: 1,
+                    opacity: 0.75,
+                    animation: `neonPixelTwinkle 2.2s ease-in-out ${px.d}s infinite`,
                   }}
-                >
-                  <div style={{ height: 66, background: p.bg }} />
-                  <div style={{ padding: 10, fontWeight: 700, color: '#334155' }}>{p.name}</div>
-                </button>
+                />
               ))}
+            </div>
+
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <h3 style={{ margin: 0, color: '#1f2937' }}>🎨 Customize Theme</h3>
+                <button onClick={() => setShowCustomize(false)} style={{ border: 'none', background: '#e5e7eb', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 700 }}>Close</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                {Object.entries(THEME_PALETTES).map(([key, p]) => (
+                  <button
+                    key={key}
+                    onClick={() => setThemeKey(key)}
+                    style={{
+                      textAlign: 'left',
+                      border: themeKey === key ? `3px solid ${p.accent}` : '1px solid #cbd5e1',
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      background: 'rgba(255,255,255,0.95)',
+                      padding: 0,
+                      position: 'relative',
+                    }}
+                  >
+                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: themeKey === key ? 0.5 : 0.2 }}>
+                      {(THEME_PIXELS[key] || []).slice(0, 8).map((px, i) => (
+                        <span
+                          key={`card-px-${key}-${i}`}
+                          style={{
+                            position: 'absolute',
+                            left: `${px.x * 0.4 + 30}%`,
+                            top: `${px.y * 0.3 + 10}%`,
+                            width: 4,
+                            height: 4,
+                            background: px.c,
+                            boxShadow: `0 0 6px ${px.c}`,
+                            borderRadius: 1,
+                            animation: `neonPixelTwinkle 2.2s ease-in-out ${px.d}s infinite`,
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <div style={{ height: 66, background: p.bg, position: 'relative', zIndex: 1 }} />
+                    <div style={{ padding: 10, fontWeight: 700, color: '#334155', position: 'relative', zIndex: 1, background: 'rgba(255,255,255,0.9)' }}>{p.name}</div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

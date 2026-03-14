@@ -1,6 +1,7 @@
 import type { GameDefinition, MoveValidation } from '../types';
 import type { MakeAWordState, MakeAWordMove } from './types';
 import { MakeAWordBoard } from './Board';
+import { WORDS as HANGMAN_WORDS } from '../hangman/words';
 
 const GAME_ID = 'makeaword';
 
@@ -12,10 +13,16 @@ function normalizeWord(input: string): string {
   return input.trim().toLowerCase();
 }
 
+const DICTIONARY = new Set(HANGMAN_WORDS.map((w) => w.toLowerCase()));
+
 function isValidWordPattern(word: string, first: string, last: string): boolean {
   if (!/^[a-z]+$/.test(word)) return false;
-  if (word.length < 3) return false;
+  if (word.length < 4) return false;
   return word.startsWith(first.toLowerCase()) && word.endsWith(last.toLowerCase());
+}
+
+function isValidEnglishWord(word: string): boolean {
+  return DICTIONARY.has(word.toLowerCase());
 }
 
 function createInitialState(_roomCode: string): MakeAWordState {
@@ -51,7 +58,8 @@ function validateMove(state: MakeAWordState, move: MakeAWordMove, playerSymbol: 
   if (state.status !== 'active') return { valid: false, error: 'Game is not active' };
 
   const current = state.players[state.currentPlayerIndex];
-  if (current?.symbol !== playerSymbol) return { valid: false, error: 'Not your turn' };
+  const isWordPhase = state.phase === 'make_words';
+  if (!isWordPhase && current?.symbol !== playerSymbol) return { valid: false, error: 'Not your turn' };
 
   if (!move || (move.type !== 'choose_letter' && move.type !== 'submit_word')) {
     return { valid: false, error: 'Invalid move' };
@@ -71,7 +79,11 @@ function validateMove(state: MakeAWordState, move: MakeAWordMove, playerSymbol: 
 
   const word = normalizeWord(move.word);
   if (!isValidWordPattern(word, first, last)) {
-    return { valid: false, error: `Word must start with ${first} and end with ${last}` };
+    return { valid: false, error: `Word must be 4+ letters and start with ${first}, end with ${last}` };
+  }
+
+  if (!isValidEnglishWord(word)) {
+    return { valid: false, error: 'Word must be a valid English dictionary word' };
   }
 
   return { valid: true };
@@ -87,7 +99,7 @@ function applyMove(state: MakeAWordState, move: MakeAWordMove, playerSymbol: str
         ...state,
         letters: { ...state.letters, first: letter },
         currentPlayerIndex: 1,
-        lastAction: `${state.players[0]?.displayName || 'Player 1'} chose first letter: ${letter}`,
+        lastAction: `${state.players[0]?.displayName || 'Player 1'} locked in the first letter.`,
       };
     }
 
@@ -97,7 +109,7 @@ function applyMove(state: MakeAWordState, move: MakeAWordMove, playerSymbol: str
       letters: { ...state.letters, last: letter },
       phase: 'make_words',
       currentPlayerIndex: 0,
-      lastAction: `${state.players[1]?.displayName || 'Player 2'} chose last letter: ${letter}. Make words now!`,
+      lastAction: `${state.players[1]?.displayName || 'Player 2'} locked in the last letter. Letters revealed — both players can type now!`,
     };
   }
 
@@ -123,7 +135,7 @@ function checkGameEnd(state: MakeAWordState): { ended: boolean; winner: string |
 export const makeAWordGame: GameDefinition<MakeAWordState, MakeAWordMove> = {
   id: GAME_ID,
   displayName: '🔤 Make a Word',
-  description: 'P1 picks first letter, P2 picks last letter. First valid word wins.',
+  description: 'Hidden letters reveal after lock-in. First valid English 4+ letter word wins.',
   minPlayers: 2,
   maxPlayers: 2,
   createInitialState,
