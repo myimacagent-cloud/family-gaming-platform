@@ -60,6 +60,12 @@ const THEME_PALETTES: Record<string, ThemePalette> = {
 
 type ThemePixel = { x: number; y: number; c: string; d: number };
 
+const CARD_PIXEL_POSITIONS = [
+  { x: 8, y: 14 }, { x: 18, y: 22 }, { x: 28, y: 10 }, { x: 40, y: 24 },
+  { x: 52, y: 12 }, { x: 64, y: 22 }, { x: 74, y: 10 }, { x: 86, y: 24 },
+  { x: 14, y: 52 }, { x: 32, y: 44 }, { x: 58, y: 48 }, { x: 80, y: 54 },
+] as const;
+
 const THEME_PIXELS: Record<string, ThemePixel[]> = Object.fromEntries(
   Object.entries(THEME_PALETTES).map(([key, palette]) => [
     key,
@@ -623,9 +629,9 @@ export default function Room() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ position: 'relative', width: 'min(640px, 96vw)', maxHeight: '82vh', overflow: 'auto', background: 'white', borderRadius: 14, padding: 16 }}
+            style={{ position: 'relative', width: 'min(640px, 96vw)', maxHeight: '82vh', overflow: 'auto', background: 'rgba(255,255,255,0.94)', borderRadius: 14, padding: 16, border: `1px solid ${theme.accent}44` }}
           >
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.45 }}>
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.75 }}>
               {(THEME_PIXELS[themeKey] || []).map((px, i) => (
                 <span
                   key={`customize-px-${i}`}
@@ -633,8 +639,8 @@ export default function Room() {
                     position: 'absolute',
                     left: `${px.x}%`,
                     top: `${px.y}%`,
-                    width: 5,
-                    height: 5,
+                    width: 7,
+                    height: 7,
                     background: px.c,
                     boxShadow: `0 0 8px ${px.c}, 0 0 12px ${px.c}`,
                     borderRadius: 1,
@@ -666,23 +672,27 @@ export default function Room() {
                       position: 'relative',
                     }}
                   >
-                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: themeKey === key ? 0.5 : 0.2 }}>
-                      {(THEME_PIXELS[key] || []).slice(0, 8).map((px, i) => (
-                        <span
-                          key={`card-px-${key}-${i}`}
-                          style={{
-                            position: 'absolute',
-                            left: `${px.x * 0.4 + 30}%`,
-                            top: `${px.y * 0.3 + 10}%`,
-                            width: 4,
-                            height: 4,
-                            background: px.c,
-                            boxShadow: `0 0 6px ${px.c}`,
-                            borderRadius: 1,
-                            animation: `neonPixelTwinkle 2.2s ease-in-out ${px.d}s infinite`,
-                          }}
-                        />
-                      ))}
+                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: themeKey === key ? 0.85 : 0.55 }}>
+                      {CARD_PIXEL_POSITIONS.map((pos, i) => {
+                        const px = (THEME_PIXELS[key] || [])[i % (THEME_PIXELS[key]?.length || 1)];
+                        if (!px) return null;
+                        return (
+                          <span
+                            key={`card-px-${key}-${i}`}
+                            style={{
+                              position: 'absolute',
+                              left: `${pos.x}%`,
+                              top: `${pos.y}%`,
+                              width: 5,
+                              height: 5,
+                              background: px.c,
+                              boxShadow: `0 0 8px ${px.c}`,
+                              borderRadius: 1,
+                              animation: `neonPixelTwinkle 2.2s ease-in-out ${px.d}s infinite`,
+                            }}
+                          />
+                        );
+                      })}
                     </div>
 
                     <div style={{ height: 66, background: p.bg, position: 'relative', zIndex: 1 }} />
