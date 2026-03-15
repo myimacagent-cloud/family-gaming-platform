@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameBoardProps } from '../types';
 import type { TriviaDuelState, TriviaDuelMove, TriviaCategory } from './types';
 
@@ -26,9 +27,43 @@ export function TriviaDuelBoard({ state, mySymbol, onMove, disabled }: TriviaDue
   const oppRoundPoints = opp ? state.roundPoints[opp.symbol] || 0 : 0;
   const myCorrectThisRound = state.currentRoundCorrect[mySymbol] || 0;
   const oppCorrectThisRound = opp ? state.currentRoundCorrect[opp.symbol] || 0 : 0;
+  const myBonus = state.currentRoundBonus[mySymbol] || 0;
+  const oppBonus = opp ? state.currentRoundBonus[opp.symbol] || 0 : 0;
+  const myStreak = state.streaks[mySymbol] || 0;
+  const oppStreak = opp ? state.streaks[opp.symbol] || 0 : 0;
 
   const myTurn = state.players[state.currentPlayerIndex]?.symbol === mySymbol && !disabled && !isFinished;
   const canAnswer = myTurn && state.currentQuestionForSymbol === mySymbol && !!state.currentQuestion;
+
+  const [nowMs, setNowMs] = useState(Date.now());
+  const timeoutSentForQuestion = useRef<string | null>(null);
+
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 200);
+    return () => clearInterval(t);
+  }, []);
+
+  const questionKey = `${state.currentQuestion?.id || 'none'}:${state.currentQuestionForSymbol || 'none'}`;
+
+  useEffect(() => {
+    timeoutSentForQuestion.current = null;
+  }, [questionKey]);
+
+  const remainingSec = useMemo(() => {
+    if (!state.questionStartedAt) return state.questionTimeLimitSec;
+    const elapsed = (nowMs - state.questionStartedAt) / 1000;
+    return Math.max(0, Math.ceil(state.questionTimeLimitSec - elapsed));
+  }, [nowMs, state.questionStartedAt, state.questionTimeLimitSec]);
+
+  useEffect(() => {
+    if (!canAnswer) return;
+    if (remainingSec > 0) return;
+    if (timeoutSentForQuestion.current === questionKey) return;
+
+    timeoutSentForQuestion.current = questionKey;
+    const move: TriviaDuelMove = { type: 'submit_answer', choiceIndex: -1 };
+    onMove(move);
+  }, [canAnswer, remainingSec, onMove, questionKey]);
 
   const submitAnswer = (choiceIndex: number) => {
     if (!canAnswer) return;
@@ -36,7 +71,8 @@ export function TriviaDuelBoard({ state, mySymbol, onMove, disabled }: TriviaDue
     onMove(move);
   };
 
-  const category = state.categoriesOrder[state.categoryIndex];
+  const category = state.currentQuestion?.category ?? state.categoriesOrder[state.categoryIndex];
+  const diffLabel = state.suddenDeath ? 'Sudden Death • Hard' : DIFF_LABEL[state.round];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 'min(900px, calc(100vw - 24px))' }}>
@@ -46,16 +82,23 @@ export function TriviaDuelBoard({ state, mySymbol, onMove, disabled }: TriviaDue
 
       <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 12, padding: 12, display: 'grid', gap: 8 }}>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontWeight: 800, color: '#0f172a' }}>
-          <span>🎯 {DIFF_LABEL[state.round]}</span>
-          <span>📚 Category {state.categoryIndex + 1}/5: {category ? CATEGORY_LABELS[category] : '—'}</span>
+          <span>🎯 {diffLabel}</span>
+          <span>📚 {state.suddenDeath ? `Sudden Death #${state.suddenDeathPair}` : `Category ${state.categoryIndex + 1}/5`}: {category ? CATEGORY_LABELS[category] : '—'}</span>
+          <span>⏱️ {remainingSec}s</span>
         </div>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontWeight: 700, color: '#334155' }}>
-          <span>🏆 Round points — {me?.displayName || 'You'}: {myRoundPoints}</span>
+          <span>🏆 Match points — {me?.displayName || 'You'}: {myRoundPoints}</span>
           <span>{opp?.displayName || 'Opponent'}: {oppRoundPoints}</span>
         </div>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontWeight: 700, color: '#334155' }}>
           <span>✅ Correct this round — {me?.displayName || 'You'}: {myCorrectThisRound}</span>
           <span>{opp?.displayName || 'Opponent'}: {oppCorrectThisRound}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontWeight: 700, color: '#334155' }}>
+          <span>🔥 Streak — {me?.displayName || 'You'}: {myStreak}</span>
+          <span>{opp?.displayName || 'Opponent'}: {oppStreak}</span>
+          <span>⭐ Bonus — {me?.displayName || 'You'}: +{myBonus}</span>
+          <span>{opp?.displayName || 'Opponent'}: +{oppBonus}</span>
         </div>
       </div>
 
@@ -98,7 +141,7 @@ export function TriviaDuelBoard({ state, mySymbol, onMove, disabled }: TriviaDue
               ? 'It ended in a draw.'
               : 'Opponent won the Trivia Duel.'
           : canAnswer
-            ? 'Your turn: answer this question!'
+            ? `Your turn: answer now (${remainingSec}s)`
             : 'Waiting for opponent answer...'}
       </div>
     </div>
