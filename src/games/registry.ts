@@ -25,6 +25,7 @@ import { spadesGame } from './spades';
 import { heartsGame } from './hearts';
 import { makeAWordGame } from './makeaword';
 import { danceBattlesGame } from './dancebattles';
+import { triviaDuelGame } from './triviaduel';
 
 // Central registry of all available games
 export const gameRegistry: GameRegistry = {
@@ -54,6 +55,7 @@ export const gameRegistry: GameRegistry = {
   [heartsGame.id]: heartsGame,
   [makeAWordGame.id]: makeAWordGame,
   [danceBattlesGame.id]: danceBattlesGame,
+  [triviaDuelGame.id]: triviaDuelGame,
 };
 
 // Helper functions

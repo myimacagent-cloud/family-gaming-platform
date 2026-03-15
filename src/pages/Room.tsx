@@ -242,6 +242,12 @@ const GAME_RULES: Record<string, RulesInfo> = {
     gameEnd: 'At end of song, highest score wins.',
     differences: 'Rhythm-style duel with live timing windows and streaks.',
   },
+  triviaduel: {
+    howToPlay: 'Each round has 5 categories: sports, food, general, TV/movies/anime, and geography. Both players answer each category question.',
+    scoring: 'Correct answers count per round. Whoever gets more correct in that round earns 1 round point.',
+    gameEnd: 'After 3 rounds (easy → medium → hard), player with most round points wins.',
+    differences: 'Head-to-head structured trivia duel with escalating difficulty.',
+  },
 };
 
 type StatLine = {

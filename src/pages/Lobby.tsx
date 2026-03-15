@@ -48,6 +48,7 @@ const GAME_EMOJIS: Record<string, string> = {
   hearts: '♥️🃏',
   makeaword: '🔤🏁',
   dancebattles: '🕺⚡',
+  triviaduel: '🧠🏁',
 };
 
 function safeGetStorage(key: string): string | null {
