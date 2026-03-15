@@ -3,75 +3,98 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Craft 31 x Pixel Playground</title>
-    <meta name="description" content="Pitch site for Craft 31: how Pixel Playground helps drive family traffic and repeat visits." />
+    <title>Craft 31 Williamsburg x Pixel Playground</title>
+    <meta name="description" content="Craft 31 Williamsburg pilot pitch: increase family satisfaction, dwell time, and repeat visits with zero-download multiplayer table games." />
     <style>
-      :root{--bg:#0f172a;--card:#111827;--muted:#94a3b8;--text:#f8fafc;--a:#22d3ee;--b:#ec4899;--ok:#34d399}
-      *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(160deg,#020617 0%,#111827 50%,#1e1b4b 100%);color:var(--text)}
-      .wrap{max-width:980px;margin:0 auto;padding:24px}
-      .hero{border:1px solid #334155;border-radius:20px;padding:28px;background:rgba(15,23,42,.75);backdrop-filter: blur(6px)}
-      h1{font-size:clamp(28px,5vw,52px);line-height:1.05;margin:0 0 12px}
-      h2{font-size:26px;margin:0 0 14px}.muted{color:var(--muted)}
+      :root{--bg:#0f172a;--card:#111827;--muted:#94a3b8;--text:#f8fafc;--a:#22d3ee;--b:#ec4899;--ok:#34d399;--line:#334155}
+      *{box-sizing:border-box}
+      body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(160deg,#020617 0%,#111827 50%,#1e1b4b 100%);color:var(--text)}
+      .wrap{max-width:1020px;margin:0 auto;padding:24px}
+      .hero,.card{border:1px solid var(--line);border-radius:18px;background:rgba(15,23,42,.72)}
+      .hero{padding:28px}
+      .card{padding:16px}
+      h1{font-size:clamp(30px,5vw,54px);line-height:1.05;margin:0 0 10px}
+      h2{font-size:26px;margin:0 0 12px}
+      .muted{color:var(--muted)}
       .pill{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700;background:rgba(34,211,238,.15);color:#67e8f9;border:1px solid rgba(34,211,238,.35)}
-      .grid{display:grid;gap:14px}.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
-      .card{border:1px solid #334155;border-radius:14px;padding:16px;background:rgba(2,6,23,.6)}
+      .row{display:flex;gap:10px;flex-wrap:wrap}
+      .grid{display:grid;gap:14px}
+      .g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
       .kpi{font-size:30px;font-weight:900}
-      .cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
-      .btn{padding:12px 16px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #334155;color:white}
+      .btn{padding:12px 16px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid var(--line);color:white;display:inline-block}
       .btn-primary{background:linear-gradient(135deg,var(--a),var(--b));border:none;color:#0b1020}
-      .section{margin-top:26px}
-      ul{margin:8px 0 0 18px;padding:0}
-      footer{margin:30px 0 8px;color:var(--muted);font-size:14px}
+      .section{margin-top:20px}
+      ul,ol{margin:8px 0 0 18px;padding:0}
+      .owner{display:none}
+      body.owner-mode .owner{display:block}
+      body.owner-mode .full{display:none}
+      .owner h2{font-size:30px}
+      .owner .big{font-size:clamp(22px,4vw,38px);font-weight:900;line-height:1.12;margin:8px 0}
+      footer{margin:24px 0 6px;color:var(--muted);font-size:13px}
     </style>
   </head>
   <body>
     <main class="wrap">
       <section class="hero">
-        <span class="pill">Pitch Draft • Craft 31 (Williamsburg, VA)</span>
-        <h1>Bring families in earlier. Keep tables longer. Make game night a destination.</h1>
-        <p class="muted">Pixel Playground is a phone-friendly multiplayer game hub your guests can join instantly with a room code. Perfect for families, groups waiting on food, and low-friction events.</p>
-        <div class="cta">
+        <span class="pill">Craft 31 • Williamsburg, VA • Pilot Proposal</span>
+        <h1>Turn wait time into play time.<br/>Turn play time into repeat visits.</h1>
+        <p class="muted">Pixel Playground gives tables instant multiplayer games via QR + room code. No app install, no login friction, works on guest phones in seconds.</p>
+        <div class="row" style="margin-top:14px">
           <a class="btn btn-primary" href="https://version-0-5.family-gaming-platform-2uq.pages.dev" target="_blank" rel="noreferrer">Open Live Demo</a>
-          <a class="btn" href="#plan">See Launch Plan</a>
+          <a class="btn" href="?mode=owner">Owner Pitch Mode (60 sec)</a>
+          <a class="btn" href="#plan">30-Day Launch Plan</a>
         </div>
       </section>
 
-      <section class="section grid g3">
-        <article class="card"><div class="kpi">5–10 min</div><div class="muted">Average quick game loop while guests wait for food</div></article>
-        <article class="card"><div class="kpi">2 players</div><div class="muted">Per room today (easy to run at tables)</div></article>
-        <article class="card"><div class="kpi">0 app install</div><div class="muted">Scan + play in browser, no account needed</div></article>
+      <section class="owner section card">
+        <h2>Owner Pitch Mode</h2>
+        <div class="big">1) Families stay happier at the table while food is coming out.</div>
+        <div class="big">2) You get built-in game-night energy without extra hardware.</div>
+        <div class="big">3) Weekly challenges create a reason to come back.</div>
+        <div class="big">Pilot ask: 2 weeks, 5 tables, measure guest usage + return intent.</div>
       </section>
 
-      <section class="section card">
-        <h2>Why this works for Craft 31</h2>
+      <section class="full section grid g3">
+        <article class="card"><div class="kpi">5–10 min</div><div class="muted">Typical game cycle while waiting for food</div></article>
+        <article class="card"><div class="kpi">0 installs</div><div class="muted">Scan QR, join room, start instantly</div></article>
+        <article class="card"><div class="kpi">Kid + adult</div><div class="muted">Games that work for mixed-age tables</div></article>
+      </section>
+
+      <section class="full section card">
+        <h2>Why this is a fit for Craft 31</h2>
         <div class="grid g3">
-          <div><strong>Family traffic</strong><ul><li>Kid-friendly games while food arrives</li><li>Keeps kids engaged at table</li><li>Better parent experience</li></ul></div>
-          <div><strong>Event nights</strong><ul><li>Trivia warm-up mini games</li><li>Bracket-style table challenges</li><li>Seasonal themed game nights</li></ul></div>
-          <div><strong>Repeat visits</strong><ul><li>Weekly high-score challenges</li><li>“Beat the House” nights</li><li>Social sharing moments</li></ul></div>
+          <div><strong>Family traffic</strong><ul><li>Less “are we done yet?” table friction</li><li>Better parent experience</li><li>Natural fit for weekend/evening families</li></ul></div>
+          <div><strong>Bar + dining energy</strong><ul><li>Pre-trivia warmups</li><li>Friendly table-vs-table challenges</li><li>Game-night social moments</li></ul></div>
+          <div><strong>Repeat behavior</strong><ul><li>Weekly score challenge</li><li>House challenge nights</li><li>New theme drops keep it fresh</li></ul></div>
         </div>
       </section>
 
-      <section id="plan" class="section card">
-        <h2>30-Day rollout plan</h2>
+      <section id="plan" class="full section card">
+        <h2>30-Day launch plan</h2>
         <ol>
-          <li><strong>Week 1:</strong> Pilot at 3–5 tables + staff training script (under 5 minutes).</li>
-          <li><strong>Week 2:</strong> Family Night promo with QR on table tents.</li>
-          <li><strong>Week 3:</strong> Leaderboard challenge + small prize card.</li>
-          <li><strong>Week 4:</strong> Review usage + decide full-floor expansion.</li>
+          <li><strong>Week 1:</strong> Pilot at 3–5 tables, staff script, table QR cards.</li>
+          <li><strong>Week 2:</strong> Family Night push + host mention in service flow.</li>
+          <li><strong>Week 3:</strong> Leaderboard + small reward card for winners.</li>
+          <li><strong>Week 4:</strong> Review usage + decide scale-up.</li>
         </ol>
       </section>
 
-      <section class="section card">
-        <h2>What we can customize for Craft 31</h2>
+      <section class="full section card">
+        <h2>Custom options for Craft 31</h2>
         <ul>
-          <li>Craft 31 branding, colors, and mascot/theme pack</li>
-          <li>“Table Code” onboarding flow for staff simplicity</li>
-          <li>Special event modes (March Madness, holidays, family bundles)</li>
-          <li>Optional sponsor/partner mini-game nights</li>
+          <li>Craft 31 branded theme (colors, logo, “house challenge” mode)</li>
+          <li>Event presets for trivia nights, holidays, and family bundles</li>
+          <li>Simple host workflow: “Scan, enter code, play now”</li>
+          <li>Optional monthly promo cadence and content drops</li>
         </ul>
       </section>
 
-      <footer>Built by JC for live pitch use. Demo evolves quickly based on feedback.</footer>
+      <footer>Built by JC for in-person pitching. Owner mode available at <code>?mode=owner</code>.</footer>
     </main>
+
+    <script>
+      const qs = new URLSearchParams(location.search);
+      if (qs.get('mode') === 'owner') document.body.classList.add('owner-mode');
+    </script>
   </body>
 </html>
