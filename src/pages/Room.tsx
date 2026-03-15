@@ -453,6 +453,8 @@ export default function Room() {
         mySymbol: string;
         onMove: (move: unknown) => void;
         disabled: boolean;
+        theme?: { bg: string; accent: string; accent2: string; textOnAccent: string };
+        themeKey?: string;
       }) => ReactNode)
     | undefined;
 
@@ -587,6 +589,8 @@ export default function Room() {
                 mySymbol={currentPlayer?.symbol || ''}
                 onMove={handleMakeMove}
                 disabled={connectionState !== 'connected'}
+                theme={theme}
+                themeKey={themeKey}
               />
             </div>
           </div>

@@ -16,22 +16,31 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 function pickQuestion(category: TriviaCategory, difficulty: 1 | 2 | 3, usedIds: string[]): TriviaQuestion {
-  const preferred = TRIVIA_QUESTIONS.filter((q) => q.category === category && q.difficulty === difficulty && !usedIds.includes(q.id));
-  if (preferred.length > 0) return preferred[Math.floor(Math.random() * preferred.length)];
-
-  const fallback = TRIVIA_QUESTIONS.filter((q) => q.category === category && !usedIds.includes(q.id));
-  if (fallback.length > 0) return fallback[Math.floor(Math.random() * fallback.length)];
-
-  const any = TRIVIA_QUESTIONS.filter((q) => q.category === category);
-  return any[Math.floor(Math.random() * any.length)];
+  const filtered = TRIVIA_QUESTIONS.filter((q) => q.category === category && q.difficulty === difficulty && !usedIds.includes(q.id));
+  if (filtered.length > 0) return filtered[Math.floor(Math.random() * filtered.length)];
+  const fallback = TRIVIA_QUESTIONS.filter((q) => q.category === category);
+  return fallback[Math.floor(Math.random() * fallback.length)];
 }
 
-function getQuestionForState(state: TriviaDuelState): TriviaQuestion {
+function pickCurrentQuestion(state: TriviaDuelState): TriviaQuestion {
   const category = state.suddenDeath
     ? CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]
     : state.categoriesOrder[state.categoryIndex];
   const difficulty = state.suddenDeath ? 3 : state.round;
   return pickQuestion(category, difficulty, state.usedQuestionIds);
+}
+
+function withRoundIntro(state: TriviaDuelState, text: string): TriviaDuelState {
+  const now = Date.now();
+  const q = pickCurrentQuestion(state);
+  return {
+    ...state,
+    currentQuestion: q,
+    usedQuestionIds: [...state.usedQuestionIds, q.id],
+    questionStartedAt: now + 2000,
+    roundIntroUntil: now + 2000,
+    roundIntroText: text,
+  };
 }
 
 function createInitialState(_roomCode: string): TriviaDuelState {
@@ -45,282 +54,203 @@ function createInitialState(_roomCode: string): TriviaDuelState {
     categoryIndex: 0,
     categoriesOrder: CATEGORIES,
     currentQuestion: null,
-    currentQuestionForSymbol: null,
     currentRoundCorrect: {},
-    currentRoundBonus: {},
     roundPoints: {},
     streaks: {},
+    cooldownUntil: {},
     usedQuestionIds: [],
     questionStartedAt: null,
     questionTimeLimitSec: 15,
+    roundIntroUntil: 0,
+    roundIntroText: '',
     suddenDeath: false,
     suddenDeathPair: 0,
     suddenDeathResults: {},
-    lastAction: 'Trivia Duel: 3 rounds, 5 categories each round. Most correct in a round gets 1 point!',
-    answerLog: [],
+    lastAction: 'Trivia Duel starting...',
   };
 }
 
 function createRestartState(currentState: TriviaDuelState): TriviaDuelState {
-  const categoriesOrder = shuffle(CATEGORIES);
   const players = currentState.players;
-  const firstSymbol = players[0]?.symbol || null;
-
   const base: TriviaDuelState = {
     ...currentState,
     status: 'active',
     winner: null,
-    currentPlayerIndex: 0,
     round: 1,
     categoryIndex: 0,
-    categoriesOrder,
+    categoriesOrder: shuffle(CATEGORIES),
     currentQuestion: null,
-    currentQuestionForSymbol: firstSymbol,
     currentRoundCorrect: Object.fromEntries(players.map((p) => [p.symbol, 0])),
-    currentRoundBonus: Object.fromEntries(players.map((p) => [p.symbol, 0])),
     roundPoints: Object.fromEntries(players.map((p) => [p.symbol, 0])),
     streaks: Object.fromEntries(players.map((p) => [p.symbol, 0])),
+    cooldownUntil: Object.fromEntries(players.map((p) => [p.symbol, 0])),
     usedQuestionIds: [],
     questionStartedAt: null,
     questionTimeLimitSec: 15,
+    roundIntroUntil: 0,
+    roundIntroText: '',
     suddenDeath: false,
     suddenDeathPair: 0,
     suddenDeathResults: Object.fromEntries(players.map((p) => [p.symbol, null])),
-    lastAction: 'Round 1 starts! Sports, Food, General, TV/Movies/Anime, Geography — let’s go.',
-    answerLog: [],
+    lastAction: 'Round 1 begins!',
   };
-
-  if (firstSymbol) {
-    const q = getQuestionForState(base);
-    base.currentQuestion = q;
-    base.usedQuestionIds = [q.id];
-    base.questionStartedAt = Date.now();
-  }
-
-  return base;
+  return withRoundIntro(base, 'ROUND 1\nEveryone answers the same question. Fastest correct gets the category point.');
 }
 
-function validateMove(state: TriviaDuelState, move: TriviaDuelMove, playerSymbol: string): MoveValidation {
+function canAnswer(state: TriviaDuelState, symbol: string): MoveValidation {
   if (state.status !== 'active') return { valid: false, error: 'Game is not active' };
-  if (!move || move.type !== 'submit_answer') return { valid: false, error: 'Invalid move' };
-
-  const current = state.players[state.currentPlayerIndex];
-  if (current?.symbol !== playerSymbol) return { valid: false, error: 'Not your turn' };
-  if (state.currentQuestionForSymbol !== playerSymbol) return { valid: false, error: 'Wait for your question' };
-  if (!state.currentQuestion) return { valid: false, error: 'Question not ready' };
-
-  const elapsedMs = state.questionStartedAt ? Date.now() - state.questionStartedAt : 0;
-  const timedOut = elapsedMs > state.questionTimeLimitSec * 1000;
-
-  if (timedOut && move.choiceIndex !== -1) {
-    return { valid: false, error: 'Time is up for this question' };
-  }
-
-  if (!Number.isInteger(move.choiceIndex)) return { valid: false, error: 'Pick a valid answer choice' };
-  if (move.choiceIndex === -1) return { valid: true };
-
-  if (move.choiceIndex < 0 || move.choiceIndex >= state.currentQuestion.options.length) {
-    return { valid: false, error: 'Pick a valid answer choice' };
-  }
-
+  if (!state.currentQuestion) return { valid: false, error: 'No question active' };
+  const now = Date.now();
+  if (state.roundIntroUntil > now) return { valid: false, error: 'Round intro in progress' };
+  if (state.questionStartedAt && now < state.questionStartedAt) return { valid: false, error: 'Question not started yet' };
+  if ((state.cooldownUntil[symbol] || 0) > now) return { valid: false, error: 'Cooldown active' };
   return { valid: true };
 }
 
-function launchQuestion(state: TriviaDuelState, forSymbol: string, currentPlayerIndex: number): TriviaDuelState {
-  const q = getQuestionForState(state);
-  return {
-    ...state,
-    currentPlayerIndex,
-    currentQuestionForSymbol: forSymbol,
-    currentQuestion: q,
-    usedQuestionIds: [...state.usedQuestionIds, q.id],
-    questionStartedAt: Date.now(),
-  };
+function validateMove(state: TriviaDuelState, move: TriviaDuelMove, playerSymbol: string): MoveValidation {
+  if (!move || (move.type !== 'submit_answer' && move.type !== 'timeout_tick')) return { valid: false, error: 'Invalid move' };
+
+  if (move.type === 'timeout_tick') {
+    if (!state.questionStartedAt || Date.now() < state.questionStartedAt + state.questionTimeLimitSec * 1000) {
+      return { valid: false, error: 'Question not timed out yet' };
+    }
+    return { valid: true };
+  }
+
+  const base = canAnswer(state, playerSymbol);
+  if (!base.valid) return base;
+
+  if (!Number.isInteger(move.choiceIndex)) return { valid: false, error: 'Invalid answer choice' };
+  if ((move.choiceIndex as number) < 0 || (move.choiceIndex as number) >= (state.currentQuestion?.options.length || 0)) {
+    return { valid: false, error: 'Invalid answer choice' };
+  }
+  return { valid: true };
 }
 
-function finishRoundOrGame(state: TriviaDuelState): TriviaDuelState {
-  const p1 = state.players[0];
-  const p2 = state.players[1];
+function startNextCategory(state: TriviaDuelState): TriviaDuelState {
+  if (state.suddenDeath) {
+    const next = {
+      ...state,
+      suddenDeathPair: state.suddenDeathPair + 1,
+      suddenDeathResults: Object.fromEntries(state.players.map((p) => [p.symbol, null])),
+    };
+    return withRoundIntro(next, `SUDDEN DEATH ${next.suddenDeathPair}\nFirst unique correct wins!`);
+  }
+
+  const nextCategory = state.categoryIndex + 1;
+  if (nextCategory < CATEGORIES.length) {
+    const next = { ...state, categoryIndex: nextCategory };
+    return withRoundIntro(next, `Category ${nextCategory + 1}/5\n${next.categoriesOrder[nextCategory]}`);
+  }
+
+  return finishRound(state);
+}
+
+function finishRound(state: TriviaDuelState): TriviaDuelState {
+  const [p1, p2] = state.players;
   if (!p1 || !p2) return state;
 
-  const p1Score = (state.currentRoundCorrect[p1.symbol] || 0) + (state.currentRoundBonus[p1.symbol] || 0);
-  const p2Score = (state.currentRoundCorrect[p2.symbol] || 0) + (state.currentRoundBonus[p2.symbol] || 0);
+  const s1 = state.currentRoundCorrect[p1.symbol] || 0;
+  const s2 = state.currentRoundCorrect[p2.symbol] || 0;
   const roundPoints = { ...state.roundPoints };
 
-  let summary = `Round ${state.round} finished: ${p1.displayName} ${p1Score} - ${p2Score} ${p2.displayName}. `;
-
-  if (p1Score > p2Score) {
+  let roundWinnerText = 'Round tied.';
+  if (s1 > s2) {
     roundPoints[p1.symbol] = (roundPoints[p1.symbol] || 0) + 1;
-    summary += `${p1.displayName} gets the round point.`;
-  } else if (p2Score > p1Score) {
+    roundWinnerText = `${p1.displayName} won this round.`;
+  } else if (s2 > s1) {
     roundPoints[p2.symbol] = (roundPoints[p2.symbol] || 0) + 1;
-    summary += `${p2.displayName} gets the round point.`;
-  } else {
-    summary += 'Round tied — no point awarded.';
+    roundWinnerText = `${p2.displayName} won this round.`;
   }
 
   if (state.round === 3) {
-    const p1Points = roundPoints[p1.symbol] || 0;
-    const p2Points = roundPoints[p2.symbol] || 0;
-
-    if (p1Points === p2Points) {
-      const tieState: TriviaDuelState = {
+    const rp1 = roundPoints[p1.symbol] || 0;
+    const rp2 = roundPoints[p2.symbol] || 0;
+    if (rp1 === rp2) {
+      const tied = {
         ...state,
         roundPoints,
         suddenDeath: true,
         suddenDeathPair: 1,
         suddenDeathResults: { [p1.symbol]: null, [p2.symbol]: null },
-        lastAction: `${summary} Final score tied ${p1Points}-${p2Points}. Sudden death starts!`,
+        lastAction: `Game tied ${rp1}-${rp2}. Sudden death!`,
       };
-      return launchQuestion(tieState, p1.symbol, 0);
+      return withRoundIntro(tied, `SUDDEN DEATH\n${roundWinnerText}`);
     }
-
-    const winner = p1Points > p2Points ? p1.symbol : p2.symbol;
-    const winnerName = winner === p1.symbol ? p1.displayName : p2.displayName;
-
+    const winner = rp1 > rp2 ? p1.symbol : p2.symbol;
     return {
       ...state,
       roundPoints,
       status: 'finished',
       winner,
-      lastAction: `${summary} ${winnerName} wins Trivia Duel ${Math.max(p1Points, p2Points)}-${Math.min(p1Points, p2Points)}!`,
+      lastAction: `${roundWinnerText} Game over.`,
     };
   }
 
   const nextRound = (state.round + 1) as 1 | 2 | 3;
-  const nextState: TriviaDuelState = {
+  const difficultyText = nextRound === 2 ? 'On to MEDIUM round' : 'On to HARD round';
+  const next = {
     ...state,
     roundPoints,
     round: nextRound,
     categoryIndex: 0,
     categoriesOrder: shuffle(CATEGORIES),
     currentRoundCorrect: { [p1.symbol]: 0, [p2.symbol]: 0 },
-    currentRoundBonus: { [p1.symbol]: 0, [p2.symbol]: 0 },
     streaks: { [p1.symbol]: 0, [p2.symbol]: 0 },
-    lastAction: `${summary} Round ${nextRound} starts — questions are harder now!`,
+    cooldownUntil: { [p1.symbol]: 0, [p2.symbol]: 0 },
+    lastAction: `${roundWinnerText} ${difficultyText}.`,
   };
 
-  return launchQuestion(nextState, p1.symbol, 0);
-}
-
-function applySuddenDeathProgress(state: TriviaDuelState): TriviaDuelState {
-  const p1 = state.players[0];
-  const p2 = state.players[1];
-  if (!p1 || !p2) return state;
-
-  const r1 = state.suddenDeathResults[p1.symbol];
-  const r2 = state.suddenDeathResults[p2.symbol];
-
-  if (r1 === null) {
-    return launchQuestion(state, p2.symbol, 1);
-  }
-
-  if (r2 === null) {
-    return launchQuestion(state, p2.symbol, 1);
-  }
-
-  if (r1 && !r2) {
-    return { ...state, status: 'finished', winner: p1.symbol, lastAction: `${p1.displayName} wins in sudden death!` };
-  }
-  if (r2 && !r1) {
-    return { ...state, status: 'finished', winner: p2.symbol, lastAction: `${p2.displayName} wins in sudden death!` };
-  }
-
-  const nextPair = state.suddenDeathPair + 1;
-  const resetState: TriviaDuelState = {
-    ...state,
-    suddenDeathPair: nextPair,
-    suddenDeathResults: { [p1.symbol]: null, [p2.symbol]: null },
-    lastAction: `Sudden death ${nextPair}: both matched again. Next question pair!`,
-  };
-
-  return launchQuestion(resetState, p1.symbol, 0);
+  return withRoundIntro(next, `ROUND ${nextRound}\n${roundWinnerText} ${difficultyText}`);
 }
 
 function applyMove(state: TriviaDuelState, move: TriviaDuelMove, playerSymbol: string): TriviaDuelState {
+  // timeout path
+  if (move.type === 'timeout_tick') {
+    return startNextCategory({ ...state, streaks: Object.fromEntries(state.players.map((p) => [p.symbol, 0])) });
+  }
+
   const question = state.currentQuestion;
   if (!question) return state;
 
-  const timedOut = move.choiceIndex === -1;
-  const correct = !timedOut && move.choiceIndex === question.correctIndex;
+  const now = Date.now();
+  const isCorrect = (move.choiceIndex as number) === question.correctIndex;
 
-  const currentRoundCorrect = { ...state.currentRoundCorrect };
-  const currentRoundBonus = { ...state.currentRoundBonus };
-  const streaks = { ...state.streaks };
-
-  if (correct) {
-    currentRoundCorrect[playerSymbol] = (currentRoundCorrect[playerSymbol] || 0) + 1;
-    streaks[playerSymbol] = (streaks[playerSymbol] || 0) + 1;
-
-    // streak bonus: every consecutive correct answer after first grants +1 bonus
-    if ((streaks[playerSymbol] || 0) >= 2) {
-      currentRoundBonus[playerSymbol] = (currentRoundBonus[playerSymbol] || 0) + 1;
-    }
-  } else {
-    streaks[playerSymbol] = 0;
+  if (!isCorrect) {
+    return {
+      ...state,
+      cooldownUntil: { ...state.cooldownUntil, [playerSymbol]: now + 2000 },
+      streaks: { ...state.streaks, [playerSymbol]: 0 },
+      lastAction: `${state.players.find((p) => p.symbol === playerSymbol)?.displayName || 'Player'} missed — 2s cooldown.`,
+    };
   }
 
-  const answerLog = [
-    ...state.answerLog,
-    {
-      round: state.round,
-      category: question.category,
-      symbol: playerSymbol,
-      choiceIndex: move.choiceIndex,
-      correct,
-      timedOut,
-    },
-  ];
-
-  const currentPlayer = state.players[state.currentPlayerIndex];
-  const playerName = currentPlayer?.displayName || 'Player';
-  const resultText = timedOut
-    ? 'timed out ⏱️'
-    : correct
-      ? 'correct ✅'
-      : `wrong ❌ (answer: ${question.options[question.correctIndex]})`;
-
-  let baseState: TriviaDuelState = {
+  // correct answer wins category immediately (fastest correct because first processed)
+  const updated: TriviaDuelState = {
     ...state,
-    currentRoundCorrect,
-    currentRoundBonus,
-    streaks,
-    answerLog,
-    questionStartedAt: null,
-    lastAction: `${playerName} answered ${resultText}`,
+    currentRoundCorrect: {
+      ...state.currentRoundCorrect,
+      [playerSymbol]: (state.currentRoundCorrect[playerSymbol] || 0) + 1,
+    },
+    streaks: {
+      ...state.streaks,
+      [playerSymbol]: (state.streaks[playerSymbol] || 0) + 1,
+    },
+    lastAction: `${state.players.find((p) => p.symbol === playerSymbol)?.displayName || 'Player'} answered first and won this category point!`,
   };
 
   if (state.suddenDeath) {
-    const suddenDeathResults = { ...baseState.suddenDeathResults, [playerSymbol]: correct };
-    baseState = { ...baseState, suddenDeathResults };
-
-    if (state.currentPlayerIndex === 0) {
-      return launchQuestion(baseState, state.players[1].symbol, 1);
-    }
-
-    return applySuddenDeathProgress(baseState);
+    const results = { ...updated.suddenDeathResults, [playerSymbol]: true };
+    return {
+      ...updated,
+      status: 'finished',
+      winner: playerSymbol,
+      suddenDeathResults: results,
+      lastAction: `${state.players.find((p) => p.symbol === playerSymbol)?.displayName || 'Player'} won sudden death!`,
+    };
   }
 
-  // normal mode: switch to second player for same category
-  if (state.currentPlayerIndex === 0) {
-    const nextSymbol = state.players[1]?.symbol;
-    if (!nextSymbol) return baseState;
-    return launchQuestion(baseState, nextSymbol, 1);
-  }
-
-  // both players answered this category
-  const nextCategoryIndex = state.categoryIndex + 1;
-  if (nextCategoryIndex >= CATEGORIES.length) {
-    return finishRoundOrGame(baseState);
-  }
-
-  const interim: TriviaDuelState = {
-    ...baseState,
-    categoryIndex: nextCategoryIndex,
-    lastAction: `${baseState.lastAction} Next category up!`,
-  };
-
-  return launchQuestion(interim, state.players[0].symbol, 0);
+  return startNextCategory(updated);
 }
 
 function checkGameEnd(state: TriviaDuelState): { ended: boolean; winner: string | null; draw: boolean } {
@@ -332,7 +262,7 @@ function checkGameEnd(state: TriviaDuelState): { ended: boolean; winner: string 
 export const triviaDuelGame: GameDefinition<TriviaDuelState, TriviaDuelMove> = {
   id: GAME_ID,
   displayName: '🧠 Trivia Duel',
-  description: '3 rounds, 5 categories, timer + streak bonus + sudden death tie-breaker.',
+  description: 'Simultaneous answers, cooldowns, round intros, and sudden death tie-breaker.',
   minPlayers: 2,
   maxPlayers: 2,
   createInitialState,
