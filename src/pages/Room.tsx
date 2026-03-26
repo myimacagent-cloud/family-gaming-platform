@@ -1,7 +1,8 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { getGame } from '../games/registry';
+import pixelPlaygroundLogo from '../assets/pixel-playground-logo.svg';
 
 const STATUS_COLORS: Record<string, string> = {
   connecting: '#f59e0b',
@@ -17,6 +18,238 @@ const STATUS_TEXT: Record<string, string> = {
   offline: 'Offline',
 };
 
+type ThemePalette = {
+  name: string;
+  bg: string;
+  accent: string;
+  accent2: string;
+  textOnAccent: string;
+};
+
+const THEME_KEY = 'pp.theme.v1';
+const NEON_PIXELS = [
+  { x: 6, y: 10, c: '#22d3ee', d: 0 },
+  { x: 18, y: 22, c: '#ec4899', d: 0.3 },
+  { x: 32, y: 8, c: '#a78bfa', d: 0.7 },
+  { x: 46, y: 18, c: '#22d3ee', d: 1.1 },
+  { x: 58, y: 12, c: '#f472b6', d: 0.5 },
+  { x: 72, y: 25, c: '#22d3ee', d: 1.3 },
+  { x: 84, y: 14, c: '#a78bfa', d: 0.9 },
+  { x: 12, y: 52, c: '#22d3ee', d: 0.8 },
+  { x: 26, y: 66, c: '#f472b6', d: 1.5 },
+  { x: 40, y: 58, c: '#22d3ee', d: 0.2 },
+  { x: 55, y: 70, c: '#a78bfa', d: 1.0 },
+  { x: 70, y: 62, c: '#22d3ee', d: 0.4 },
+  { x: 86, y: 74, c: '#f472b6', d: 1.2 },
+  { x: 8, y: 84, c: '#a78bfa', d: 0.6 },
+  { x: 22, y: 90, c: '#22d3ee', d: 1.7 },
+  { x: 38, y: 82, c: '#ec4899', d: 0.1 },
+  { x: 64, y: 88, c: '#22d3ee', d: 1.4 },
+  { x: 78, y: 92, c: '#a78bfa', d: 0.55 }
+] as const;
+const THEME_PALETTES: Record<string, ThemePalette> = {
+  pixelPop: { name: 'Pixel Pop', bg: 'linear-gradient(135deg, #6D7DFF 0%, #9E5BFF 100%)', accent: '#6D7DFF', accent2: '#9E5BFF', textOnAccent: '#ffffff' },
+  mintBlast: { name: 'Mint Blast', bg: 'linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%)', accent: '#00A896', accent2: '#00B4D8', textOnAccent: '#ffffff' },
+  sunsetArcade: { name: 'Sunset Arcade', bg: 'linear-gradient(135deg, #FF7A59 0%, #FF4D8D 100%)', accent: '#FF5A5F', accent2: '#FF4D8D', textOnAccent: '#ffffff' },
+  nightNeon: { name: 'Night Neon', bg: 'linear-gradient(135deg, #111827 0%, #312E81 100%)', accent: '#4F46E5', accent2: '#7C3AED', textOnAccent: '#ffffff' },
+  candyCloud: { name: 'Candy Cloud', bg: 'linear-gradient(135deg, #FF9ECF 0%, #FFD166 100%)', accent: '#FF5FA2', accent2: '#FFC145', textOnAccent: '#ffffff' },
+  oceanArc: { name: 'Ocean Arc', bg: 'linear-gradient(135deg, #0EA5E9 0%, #22C55E 100%)', accent: '#0284C7', accent2: '#16A34A', textOnAccent: '#ffffff' },
+  magmaRush: { name: 'Magma Rush', bg: 'linear-gradient(135deg, #F97316 0%, #DC2626 100%)', accent: '#EA580C', accent2: '#B91C1C', textOnAccent: '#ffffff' },
+  forestQuest: { name: 'Forest Quest', bg: 'linear-gradient(135deg, #14532D 0%, #4D7C0F 100%)', accent: '#166534', accent2: '#65A30D', textOnAccent: '#ffffff' },
+};
+
+type ThemePixel = { x: number; y: number; c: string; d: number };
+
+const CARD_PIXEL_POSITIONS = [
+  { x: 8, y: 14 }, { x: 18, y: 22 }, { x: 28, y: 10 }, { x: 40, y: 24 },
+  { x: 52, y: 12 }, { x: 64, y: 22 }, { x: 74, y: 10 }, { x: 86, y: 24 },
+  { x: 14, y: 52 }, { x: 32, y: 44 }, { x: 58, y: 48 }, { x: 80, y: 54 },
+] as const;
+
+const THEME_PIXELS: Record<string, ThemePixel[]> = Object.fromEntries(
+  Object.entries(THEME_PALETTES).map(([key, palette]) => [
+    key,
+    NEON_PIXELS.map((p, i) => ({
+      x: p.x,
+      y: p.y,
+      d: p.d,
+      c: i % 2 === 0 ? palette.accent : palette.accent2,
+    })),
+  ]),
+) as Record<string, ThemePixel[]>;
+
+type RulesInfo = {
+  howToPlay: string;
+  scoring: string;
+  gameEnd: string;
+  differences?: string;
+};
+
+const GAME_RULES: Record<string, RulesInfo> = {
+  tictactoe: {
+    howToPlay: 'Take turns placing your mark on a 3x3 grid. Make a line of 3 horizontally, vertically, or diagonally.',
+    scoring: 'Win = 1 win, draw = 1 draw, loss = 1 loss in your room stats.',
+    gameEnd: 'Ends when someone gets 3 in a row or all cells are filled.',
+    differences: 'Very close to classic Tic-Tac-Toe.',
+  },
+  'tictactoe-3piece': {
+    howToPlay: 'Each player only has 3 pieces and repositions them after placing all 3.',
+    scoring: 'Win/draw/loss tracked in room stats.',
+    gameEnd: 'Ends when someone forms a 3-in-a-row pattern.',
+    differences: 'Unlike classic Tic-Tac-Toe, pieces can move once all are placed.',
+  },
+  hangman: {
+    howToPlay: 'Players take turns guessing one letter of a hidden word.',
+    scoring: 'Co-op objective: reveal the full word before max wrong guesses.',
+    gameEnd: 'Ends when the word is solved or wrong guesses reach the limit.',
+    differences: 'Multiplayer co-op turn passing compared with solo classic Hangman.',
+  },
+  chess: {
+    howToPlay: 'Standard chess movement rules by piece type.',
+    scoring: 'Win/loss result only (no piece points shown).',
+    gameEnd: 'Checkmate, draw condition, or resignation/timeout if implemented.',
+    differences: 'Digital room + reconnect flow.',
+  },
+  rockpaperscissors: {
+    howToPlay: 'Both players choose rock, paper, or scissors each round.',
+    scoring: 'Round wins count toward overall result.',
+    gameEnd: 'Ends after configured rounds or when win condition is reached.',
+    differences: 'Room-based multiplayer flow instead of instant one-off.',
+  },
+  dotsandboxes: {
+    howToPlay: 'Draw lines to complete boxes; completing a box gives another turn.',
+    scoring: 'Each completed box = 1 point.',
+    gameEnd: 'Ends when all boxes are completed.',
+    differences: 'Classic rules with online room play.',
+  },
+  colorwars: {
+    howToPlay: 'Tap your tiles to add dots. Tiles burst at threshold and spread to neighbors.',
+    scoring: 'You score by controlling more tiles; elimination wins.',
+    gameEnd: 'Ends when one player loses all controlled color tiles (after both started).',
+    differences: 'Custom chain-reaction rules inspired by territory/chain games.',
+  },
+  connectfour: {
+    howToPlay: 'Drop pieces into columns and connect 4 in a row.',
+    scoring: 'Win/draw/loss tracked in room stats.',
+    gameEnd: 'Ends on connect-4 or full board draw.',
+    differences: 'Classic rules with room UI.',
+  },
+  memory: {
+    howToPlay: 'Flip two cards each turn and try to find matching pairs.',
+    scoring: 'Each pair found adds to your count.',
+    gameEnd: 'Ends when all pairs are matched.',
+    differences: 'Turn-based multiplayer in shared room.',
+  },
+  marblesevenodd: {
+    howToPlay: 'Players choose hidden marbles and guess odd/even outcomes.',
+    scoring: 'Correct outcomes add to your score according to game logic.',
+    gameEnd: 'Ends when target score/round condition is met.',
+    differences: 'Simplified family-friendly odd/even variant.',
+  },
+  battleship: {
+    howToPlay: 'Place ships, then take turns firing at grid coordinates.',
+    scoring: 'Hits sink ships; objective is to sink all opponent ships first.',
+    gameEnd: 'Ends when one fleet is fully sunk.',
+    differences: 'Classic battleship with simplified room interaction.',
+  },
+  checkers: {
+    howToPlay: 'Move diagonally, capture by jumping, king when reaching far row.',
+    scoring: 'No points; first to remove/block opponent wins.',
+    gameEnd: 'Ends when one player has no legal moves or no pieces.',
+    differences: 'Room-based multiplayer flow.',
+  },
+  airhockey: {
+    howToPlay: 'Choose guard row and shoot row each turn.',
+    scoring: 'A shot scores if it does not match opponent guard row. First to target score wins.',
+    gameEnd: 'Ends when a player reaches the target goals.',
+    differences: 'Custom turn-based strategy version of real-time air hockey.',
+  },
+  war: {
+    howToPlay: 'Each player flips top card each trick; higher rank wins the trick.',
+    scoring: 'Each trick won = 1 point.',
+    gameEnd: 'Ends when decks are exhausted; most tricks wins.',
+    differences: 'Simplified War (no tie-battle stack yet).',
+  },
+  gofish: {
+    howToPlay: 'Ask for a rank you hold. If opponent has it, they must give all cards of that rank; otherwise Go Fish.',
+    scoring: 'A book = 4 of the same rank. Each book = 1 point.',
+    gameEnd: 'Ends when all books are formed / no playable cards remain.',
+    differences: 'Privacy-safe action text and card-visual UI for room play.',
+  },
+  crazyeights: {
+    howToPlay: 'On your turn, play a card matching rank or active suit. 8s are wild and let you choose the next suit.',
+    scoring: 'First player to empty their hand wins the round.',
+    gameEnd: 'Ends when one player has no cards left.',
+    differences: 'Simplified family-friendly Crazy Eights (single-deck, draw-one turn flow).',
+  },
+  unolight: {
+    howToPlay: 'Match the top card by color or value. Wild cards let you pick the next color.',
+    scoring: 'Round winner is first player to empty their hand.',
+    gameEnd: 'Ends as soon as one player has no cards left.',
+    differences: 'Custom Uno-style clone (Color Clash) with simplified 2-player room flow.',
+  },
+  blackjack: {
+    howToPlay: 'Take turns choosing Hit (draw card) or Stand (hold).',
+    scoring: 'Closest hand total to 21 without going over wins.',
+    gameEnd: 'Ends when both players are done (stood or busted).',
+    differences: 'PvP showdown version (no dealer hand).',
+  },
+  oldmaid: {
+    howToPlay: 'Take turns drawing a random card from opponent hand.',
+    scoring: 'No points; objective is to avoid ending with the Old Maid.',
+    gameEnd: 'Ends when one player is left holding the Old Maid card.',
+    differences: 'Fast 2-player online version with auto pair removal.',
+  },
+  snakesladders: {
+    howToPlay: 'Roll the die and move forward. Ladders move you up, snakes move you down.',
+    scoring: 'No points; race to reach square 100 first.',
+    gameEnd: 'Ends when a player reaches square 100.',
+    differences: 'Quick online 2-player version with instant auto-roll movement.',
+  },
+  bingo: {
+    howToPlay: 'Caller draws a number, players mark it if present on their board.',
+    scoring: 'First player to complete a full line wins.',
+    gameEnd: 'Ends as soon as a player gets BINGO (or draw if no numbers remain).',
+    differences: '2-player online call-and-mark flow with FREE center tile.',
+  },
+  dominoes: {
+    howToPlay: 'Play tiles by matching chain ends. If blocked, draw from boneyard.',
+    scoring: 'Win by playing all tiles. If blocked, lowest pip sum wins.',
+    gameEnd: 'Ends when a player empties hand or both players are blocked.',
+    differences: 'Fast 2-player draw dominoes with side-select play controls.',
+  },
+  spades: {
+    howToPlay: 'Bid tricks, follow suit, and use spades as trump.',
+    scoring: 'Closest to your bid wins this quick round version.',
+    gameEnd: 'Ends after all tricks are played.',
+    differences: '2-player adaptation with bid-accuracy winner logic.',
+  },
+  hearts: {
+    howToPlay: 'Play tricks and avoid hearts + the Queen of Spades points.',
+    scoring: 'Lowest total points wins.',
+    gameEnd: 'Ends after all cards are played.',
+    differences: '2-player adaptation of classic Hearts.',
+  },
+  makeaword: {
+    howToPlay: 'Player 1 picks first letter and Player 2 picks last letter. Letters stay hidden until both are locked, then both players can type.',
+    scoring: 'First valid English dictionary word (4+ letters) wins the round.',
+    gameEnd: 'Ends immediately when someone submits a valid word.',
+    differences: 'Fast head-to-head word race with hidden letter reveal.',
+  },
+  dancebattles: {
+    howToPlay: 'Press arrow keys when falling arrows reach the hit zone.',
+    scoring: 'On-target hit = 5 points, close hit = 2 points, miss/far = 0 points.',
+    gameEnd: 'At end of song, highest score wins.',
+    differences: 'Rhythm-style duel with live timing windows and streaks.',
+  },
+  triviaduel: {
+    howToPlay: 'Each round has 5 categories: sports, food, general, TV/movies/anime, and geography. Both players answer each category question.',
+    scoring: 'Correct answers count per round. Whoever gets more correct in that round earns 1 round point.',
+    gameEnd: 'After 3 rounds (easy → medium → hard), player with most round points wins.',
+    differences: 'Head-to-head structured trivia duel with escalating difficulty.',
+  },
+};
+
 type StatLine = {
   wins: number;
   draws: number;
@@ -28,6 +261,10 @@ type StatsByUser = Record<string, StatsByGame>;
 
 const DEFAULT_STATS: StatLine = { wins: 0, draws: 0, losses: 0 };
 const STATS_KEY = 'fgp.userStats.v1';
+
+function avatarSrc(id?: string): string | null {
+  return id ? `/avatars/${id}.svg` : null;
+}
 
 function getStoredStats(): StatsByUser {
   try {
@@ -64,6 +301,10 @@ export default function Room() {
   const location = useLocation();
   const userId = localStorage.getItem('userId') || '';
   const [showCopied, setShowCopied] = useState(false);
+  const [showShareQr, setShowShareQr] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [themeKey, setThemeKey] = useState<string>(() => localStorage.getItem(THEME_KEY) || 'pixelPop');
   const [gameStats, setGameStats] = useState<StatLine>(DEFAULT_STATS);
   const [lastRecordedRound, setLastRecordedRound] = useState<number>(0);
   const initialGameType = (location.state as { gameType?: string } | null)?.gameType;
@@ -77,6 +318,48 @@ export default function Room() {
   const gameDefinition = useMemo(() => {
     return gameType ? getGame(gameType) : undefined;
   }, [gameType]);
+
+  const rulesInfo = gameType ? GAME_RULES[gameType] : undefined;
+  const theme = THEME_PALETTES[themeKey] || THEME_PALETTES.pixelPop;
+
+  const pieceToneStyle = {
+    filter:
+      themeKey === 'mintBlast'
+        ? 'hue-rotate(95deg) saturate(1.08)'
+        : themeKey === 'sunsetArcade'
+          ? 'hue-rotate(-28deg) saturate(1.16)'
+          : themeKey === 'nightNeon'
+            ? 'hue-rotate(155deg) saturate(1.22) contrast(1.04)'
+            : 'none',
+  } as const;
+
+  const boardThemeStyle = {
+    background:
+      themeKey === 'nightNeon'
+        ? 'linear-gradient(160deg, rgba(2,6,23,0.92) 0%, rgba(30,27,75,0.85) 100%)'
+        : `linear-gradient(160deg, rgba(255,255,255,0.92) 0%, ${theme.accent2}22 100%)`,
+    border: themeKey === 'nightNeon' ? '2px solid rgba(34,211,238,0.9)' : `2px solid ${theme.accent}66`,
+    boxShadow:
+      themeKey === 'nightNeon'
+        ? '0 0 0 1px rgba(236,72,153,0.55), 0 0 18px rgba(34,211,238,0.65), 0 0 34px rgba(236,72,153,0.45), inset 0 0 20px rgba(34,211,238,0.12)'
+        : `0 12px 30px ${theme.accent}33`,
+    animation: themeKey === 'nightNeon' ? 'neonPulse 2.2s ease-in-out infinite' : undefined,
+  } as const;
+
+  const roomLink = useMemo(() => {
+    if (!roomCode) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/room/${roomCode}`;
+  }, [roomCode]);
+
+  const qrCodeUrl = useMemo(() => {
+    if (!roomLink) return '';
+    return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(roomLink)}`;
+  }, [roomLink]);
+
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, themeKey);
+  }, [themeKey]);
 
   useEffect(() => {
     if (!userId || !gameType) return;
@@ -116,7 +399,7 @@ export default function Room() {
 
   const handleRestart = () => {
     if (connectionState !== 'connected') return;
-    sendMessage({ type: 'restart_game', userId });
+    sendMessage({ type: 'restart_vote', userId });
   };
 
   const copyRoomCode = () => {
@@ -125,11 +408,33 @@ export default function Room() {
     setTimeout(() => setShowCopied(false), 2000);
   };
 
+  const shareRoom = async () => {
+    if (!roomLink) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join my Pixel Playground room',
+          text: `Join my Pixel Playground room (${roomCode})`,
+          url: roomLink,
+        });
+        return;
+      } catch {
+        // fallback to copy link
+      }
+    }
+    navigator.clipboard.writeText(roomLink);
+  };
+
   const currentPlayer = roomState?.players.find(p => p.userId === userId);
   const currentPlayerSymbol = roomState?.players[roomState?.currentPlayerIndex ?? 0]?.symbol;
   const myTurn = currentPlayer?.symbol === currentPlayerSymbol && roomState?.status === 'active';
   const isWaiting = roomState?.status === 'waiting';
   const isFinished = roomState?.status === 'finished' || roomState?.status === 'draw';
+
+  const restartVotes = roomState?.restartVotes || [];
+  const connectedPlayers = roomState?.players.filter((p) => p.connected) || [];
+  const restartVotesNeeded = Math.max(0, connectedPlayers.length - restartVotes.length);
+  const myRestartVote = restartVotes.includes(userId);
 
   const statusMessage = () => {
     if (isWaiting) return 'Waiting for opponent...';
@@ -141,30 +446,48 @@ export default function Room() {
     return '';
   };
 
-  const gameBoard = useMemo(() => {
-    if (!roomState || !gameDefinition) return null;
-    return gameDefinition.renderBoard({
-      state: roomState as any,
-      myPlayerId: userId,
-      mySymbol: currentPlayer?.symbol || '',
-      onMove: handleMakeMove,
-      disabled: connectionState !== 'connected',
-    });
-  }, [roomState, gameDefinition, userId, currentPlayer?.symbol, connectionState]);
+  const GameBoardComponent = gameDefinition?.renderBoard as
+    | ((props: {
+        state: any;
+        myPlayerId: string;
+        mySymbol: string;
+        onMove: (move: unknown) => void;
+        disabled: boolean;
+        theme?: { bg: string; accent: string; accent2: string; textOnAccent: string };
+        themeKey?: string;
+      }) => ReactNode)
+    | undefined;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: theme.bg }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.95)', padding: '15px 25px', borderRadius: '15px', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0, fontSize: '22px', color: '#333' }}>
-            {gameDefinition?.displayName || 'Game Room'}
-          </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src={pixelPlaygroundLogo} alt="Pixel Playground" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' }} />
+            <div>
+              <div style={{ margin: 0, fontSize: '12px', color: theme.accent, fontWeight: 800 }}>PIXEL PLAYGROUND</div>
+              <h1 style={{ margin: 0, fontSize: '22px', color: '#333' }}>{gameDefinition?.displayName || 'Game Room'} ✨</h1>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ color: '#666', fontSize: '14px' }}>Room:</span>
-            <code onClick={copyRoomCode} style={{ background: '#f0f0f0', padding: '6px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', letterSpacing: '2px', color: '#667eea', cursor: 'pointer' }}>
+            <code onClick={copyRoomCode} style={{ background: '#f0f0f0', padding: '6px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', letterSpacing: '2px', color: theme.accent, cursor: 'pointer' }}>
               {roomCode}
             </code>
-            {showCopied && <span style={{ color: '#10b981', fontSize: '12px' }}>Copied!</span>}
+            {showCopied && <span style={{ color: '#10b981', fontSize: '12px' }}>Code copied!</span>}
+
+            <button onClick={shareRoom} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: theme.accent, color: theme.textOnAccent, fontWeight: 700, cursor: 'pointer' }}>
+              Share
+            </button>
+            <button onClick={() => setShowShareQr((v) => !v)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+              QR
+            </button>
+            <button onClick={() => setShowRules(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+              ❓ Rules
+            </button>
+            <button onClick={() => setShowCustomize(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+              🎨 Customize
+            </button>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -173,7 +496,7 @@ export default function Room() {
             {STATUS_TEXT[connectionState]}
           </div>
           {connectionState === 'offline' && (
-            <button onClick={reconnect} style={{ padding: '8px 16px', background: '#667eea', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+            <button onClick={reconnect} style={{ padding: '8px 16px', background: theme.accent, color: theme.textOnAccent, border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
               Reconnect
             </button>
           )}
@@ -186,13 +509,46 @@ export default function Room() {
         </div>
       )}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '25px' }}>
+      {showShareQr && roomLink && (
+        <div style={{ alignSelf: 'center', background: 'rgba(255,255,255,0.95)', borderRadius: '14px', padding: '14px', marginBottom: '14px', textAlign: 'center' }}>
+          <div style={{ fontWeight: 700, color: '#334155', marginBottom: '8px' }}>Scan to join room {roomCode}</div>
+          <img src={qrCodeUrl} alt="Room QR code" width={220} height={220} style={{ borderRadius: '10px', border: '1px solid #e5e7eb', background: '#fff' }} />
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#64748b', wordBreak: 'break-all' }}>{roomLink}</div>
+        </div>
+      )}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '25px', position: 'relative', zIndex: 1 }}>
+        {themeKey === 'nightNeon' && (
+          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+            {NEON_PIXELS.map((p, i) => (
+              <span
+                key={`np-${i}`}
+                style={{
+                  position: 'absolute',
+                  left: `${p.x}%`,
+                  top: `${p.y}%`,
+                  width: 6,
+                  height: 6,
+                  background: p.c,
+                  boxShadow: `0 0 10px ${p.c}, 0 0 16px ${p.c}`,
+                  borderRadius: 1,
+                  opacity: 0.85,
+                  animation: `neonPixelTwinkle 2.2s ease-in-out ${p.d}s infinite`,
+                }}
+              />
+            ))}
+          </div>
+        )}
         {roomState && (
           <div style={{ display: 'flex', gap: '40px', padding: '20px 40px', background: 'rgba(255,255,255,0.95)', borderRadius: '15px', alignItems: 'center' }}>
             {roomState.players.map((p) => (
               <div key={p.userId} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', opacity: p.connected ? 1 : 0.5 }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold', background: p.symbol === 'X' ? '#667eea' : '#764ba2', color: 'white', boxShadow: p.userId === userId ? '0 0 0 4px #ffeb3b' : 'none' }}>
-                  {p.symbol}
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold', background: p.symbol === 'X' ? theme.accent : theme.accent2, color: 'white', boxShadow: p.userId === userId ? '0 0 0 4px #ffeb3b' : 'none', overflow: 'hidden' }}>
+                  {avatarSrc((p as any).avatarId) ? (
+                    <img src={avatarSrc((p as any).avatarId)!} alt={p.displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    p.symbol
+                  )}
                 </div>
                 <span style={{ fontSize: '14px', fontWeight: 600 }}>{p.displayName}</span>
                 <span style={{ fontSize: '12px', color: p.connected ? '#10b981' : '#ef4444' }}>{p.connected ? 'Online' : 'Offline'}</span>
@@ -215,7 +571,30 @@ export default function Room() {
           </div>
         )}
 
-        {gameBoard}
+        {roomState && gameDefinition && GameBoardComponent && (
+          <div
+            style={{
+              ...boardThemeStyle,
+              borderRadius: 18,
+              padding: 12,
+              width: 'min(980px, calc(100vw - 26px))',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <div style={{ ...pieceToneStyle, width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <GameBoardComponent
+                state={roomState as any}
+                myPlayerId={userId}
+                mySymbol={currentPlayer?.symbol || ''}
+                onMove={handleMakeMove}
+                disabled={connectionState !== 'connected'}
+                theme={theme}
+                themeKey={themeKey}
+              />
+            </div>
+          </div>
+        )}
 
         {roomState && !gameDefinition && (
           <div style={{ background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.35)', color: '#fff', borderRadius: '12px', padding: '10px 14px', fontWeight: 600 }}>
@@ -223,16 +602,163 @@ export default function Room() {
           </div>
         )}
 
-        {isFinished && (
-          <button onClick={handleRestart} style={{ padding: '16px 40px', fontSize: '18px', fontWeight: 600, background: 'white', color: '#667eea', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
-            Play Again
-          </button>
+        {roomState && roomState.players.length >= 2 && (
+          <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: '10px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={handleRestart}
+              disabled={connectionState !== 'connected' || myRestartVote}
+              style={{
+                padding: '12px 20px',
+                fontSize: '15px',
+                fontWeight: 800,
+                background: myRestartVote ? '#94a3b8' : '#16a34a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: myRestartVote ? 'default' : 'pointer',
+              }}
+            >
+              ⚡ Instant Restart ({myRestartVote ? 'Voted' : 'Vote'})
+            </button>
+            <div style={{ fontSize: 12, color: '#334155', fontWeight: 700 }}>
+              {restartVotesNeeded > 0 ? `${restartVotesNeeded} more vote${restartVotesNeeded === 1 ? '' : 's'} needed` : 'Restarting...'}
+            </div>
+          </div>
         )}
 
         <button onClick={() => navigate('/')} style={{ padding: '12px 30px', fontSize: '14px', fontWeight: 600, background: 'rgba(0,0,0,0.3)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '20px' }}>
           Leave Room
         </button>
       </div>
+
+
+      {showCustomize && (
+        <div
+          onClick={() => setShowCustomize(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: 'relative', width: 'min(640px, 96vw)', maxHeight: '82vh', overflow: 'auto', background: 'rgba(255,255,255,0.94)', borderRadius: 14, padding: 16, border: `1px solid ${theme.accent}44` }}
+          >
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.75 }}>
+              {(THEME_PIXELS[themeKey] || []).map((px, i) => (
+                <span
+                  key={`customize-px-${i}`}
+                  style={{
+                    position: 'absolute',
+                    left: `${px.x}%`,
+                    top: `${px.y}%`,
+                    width: 7,
+                    height: 7,
+                    background: px.c,
+                    boxShadow: `0 0 8px ${px.c}, 0 0 12px ${px.c}`,
+                    borderRadius: 1,
+                    opacity: 0.75,
+                    animation: `neonPixelTwinkle 2.2s ease-in-out ${px.d}s infinite`,
+                  }}
+                />
+              ))}
+            </div>
+
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <h3 style={{ margin: 0, color: '#1f2937' }}>🎨 Customize Theme</h3>
+                <button onClick={() => setShowCustomize(false)} style={{ border: 'none', background: '#e5e7eb', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 700 }}>Close</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                {Object.entries(THEME_PALETTES).map(([key, p]) => (
+                  <button
+                    key={key}
+                    onClick={() => setThemeKey(key)}
+                    style={{
+                      textAlign: 'left',
+                      border: themeKey === key ? `3px solid ${p.accent}` : '1px solid #cbd5e1',
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      background: 'rgba(255,255,255,0.95)',
+                      padding: 0,
+                      position: 'relative',
+                    }}
+                  >
+                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: themeKey === key ? 0.85 : 0.55 }}>
+                      {CARD_PIXEL_POSITIONS.map((pos, i) => {
+                        const px = (THEME_PIXELS[key] || [])[i % (THEME_PIXELS[key]?.length || 1)];
+                        if (!px) return null;
+                        return (
+                          <span
+                            key={`card-px-${key}-${i}`}
+                            style={{
+                              position: 'absolute',
+                              left: `${pos.x}%`,
+                              top: `${pos.y}%`,
+                              width: 5,
+                              height: 5,
+                              background: px.c,
+                              boxShadow: `0 0 8px ${px.c}`,
+                              borderRadius: 1,
+                              animation: `neonPixelTwinkle 2.2s ease-in-out ${px.d}s infinite`,
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ height: 66, background: p.bg, position: 'relative', zIndex: 1 }} />
+                    <div style={{ padding: 10, fontWeight: 700, color: '#334155', position: 'relative', zIndex: 1, background: 'rgba(255,255,255,0.9)' }}>{p.name}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {showRules && (
+        <div
+          onClick={() => setShowRules(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 'min(760px, 96vw)', maxHeight: '82vh', overflow: 'auto', background: 'white', borderRadius: 14, padding: 16 }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <h3 style={{ margin: 0, color: '#1f2937' }}>❓ {gameDefinition?.displayName || 'Game'} Rules</h3>
+              <button onClick={() => setShowRules(false)} style={{ border: 'none', background: '#e5e7eb', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 700 }}>Close</button>
+            </div>
+            {rulesInfo ? (
+              <div style={{ display: 'grid', gap: 10, color: '#334155' }}>
+                <div><strong>How to play:</strong> {rulesInfo.howToPlay}</div>
+                <div><strong>How scoring works:</strong> {rulesInfo.scoring}</div>
+                <div><strong>When the game ends:</strong> {rulesInfo.gameEnd}</div>
+                {rulesInfo.differences && <div><strong>How this version differs:</strong> {rulesInfo.differences}</div>}
+              </div>
+            ) : (
+              <div style={{ color: '#475569' }}>
+                Rules for this game are not added yet. Add it in <code>GAME_RULES</code> in <code>Room.tsx</code> so future players can see it.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <style>{`@keyframes neonPulse { 0% { box-shadow: 0 0 0 1px rgba(236,72,153,0.45), 0 0 14px rgba(34,211,238,0.45), 0 0 26px rgba(236,72,153,0.28), inset 0 0 14px rgba(34,211,238,0.08); } 50% { box-shadow: 0 0 0 1px rgba(236,72,153,0.75), 0 0 24px rgba(34,211,238,0.88), 0 0 42px rgba(236,72,153,0.58), inset 0 0 24px rgba(34,211,238,0.2); } 100% { box-shadow: 0 0 0 1px rgba(236,72,153,0.45), 0 0 14px rgba(34,211,238,0.45), 0 0 26px rgba(236,72,153,0.28), inset 0 0 14px rgba(34,211,238,0.08); } } @keyframes neonPixelTwinkle { 0% { opacity: 0.35; transform: scale(0.85);} 50% { opacity: 1; transform: scale(1.2);} 100% { opacity: 0.35; transform: scale(0.85);} }`}</style>
+
+      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
+        <img
+          src={pixelPlaygroundLogo}
+          alt="Pixel Playground"
+          style={{
+            width: 'min(260px, 70vw)',
+            opacity: 0.95,
+            filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.25))',
+          }}
+        />
+      </div>
+
     </div>
   );
 }

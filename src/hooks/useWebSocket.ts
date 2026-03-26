@@ -15,6 +15,7 @@ interface WebSocketHook {
 const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_DELAY_MS = 1000;
 const MAX_DELAY_MS = 30000;
+const INACTIVITY_TIMEOUT_MS = 2 * 60 * 1000;
 
 export function useWebSocket(roomCode: string, initialGameType?: string): WebSocketHook {
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
@@ -26,9 +27,11 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
   const reconnectAttempts = useRef(0);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartbeatInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastActivityTs = useRef<number>(Date.now());
 
   const userId = useRef(localStorage.getItem('userId') || crypto.randomUUID()).current;
   const displayName = useRef(localStorage.getItem('displayName') || 'Player').current;
+  const avatarId = useRef(localStorage.getItem('avatarId') || '').current;
 
   useEffect(() => {
     if (!localStorage.getItem('userId')) {
@@ -36,10 +39,25 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
     }
   }, [userId]);
 
-  const connect = useCallback(() => {
+  const markActivity = useCallback(() => {
+    lastActivityTs.current = Date.now();
+  }, []);
+
+  const isInactive = useCallback(() => {
+    return Date.now() - lastActivityTs.current > INACTIVITY_TIMEOUT_MS;
+  }, []);
+
+  const connect = useCallback((force = false) => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || `wss://family-gaming-platform.juniorcrockett23124-cmd.workers.dev/websocket?room=${roomCode}`;
+    if (!force && isInactive()) {
+      setConnectionState('offline');
+      setError('Paused reconnect after 2+ minutes of inactivity. Tap Reconnect when you return.');
+      return;
+    }
+
+    const wsBase = import.meta.env.VITE_WS_URL || 'wss://family-gaming-platform.myimacagent.workers.dev';
+    const wsUrl = `${wsBase}/websocket?room=${roomCode}`;
     console.log(`[WS] Connecting to ${wsUrl} (attempt ${reconnectAttempts.current + 1})`);
     setConnectionState(reconnectAttempts.current > 0 ? 'reconnecting' : 'connecting');
     setError(null);
@@ -58,6 +76,7 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
         displayName,
         roomCode,
         ...(initialGameType ? { gameType: initialGameType } : {}),
+        ...(avatarId ? { avatarId } : {}),
       };
       socket.send(JSON.stringify(joinMsg));
 
@@ -115,11 +134,22 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
       if (heartbeatInterval.current) {
         clearInterval(heartbeatInterval.current);
       }
+
+      if (isInactive()) {
+        setError('Paused reconnect after 2+ minutes of inactivity. Tap Reconnect when you return.');
+        return;
+      }
+
       if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
         const delay = Math.min(BASE_DELAY_MS * Math.pow(2, reconnectAttempts.current), MAX_DELAY_MS);
         console.log(`[WS] Reconnecting in ${delay}ms...`);
         setConnectionState('reconnecting');
         reconnectTimer.current = setTimeout(() => {
+          if (isInactive()) {
+            setConnectionState('offline');
+            setError('Paused reconnect after 2+ minutes of inactivity. Tap Reconnect when you return.');
+            return;
+          }
           reconnectAttempts.current++;
           connect();
         }, delay);
@@ -132,7 +162,7 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
       console.error('[WS] Error:', err);
       setError('Connection error');
     };
-  }, [roomCode, userId, displayName, initialGameType]);
+  }, [roomCode, userId, displayName, initialGameType, isInactive]);
 
   const sendMessage = useCallback((msg: ClientMessage) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
@@ -144,10 +174,26 @@ export function useWebSocket(roomCode: string, initialGameType?: string): WebSoc
   }, []);
 
   const reconnect = useCallback(() => {
+    markActivity();
     reconnectAttempts.current = 0;
     if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-    connect();
-  }, [connect]);
+    connect(true);
+  }, [connect, markActivity]);
+
+  useEffect(() => {
+    const activityEvents: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchstart', 'mousemove', 'scroll', 'focus'];
+    const onActivity = () => markActivity();
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, onActivity, { passive: true });
+    });
+
+    return () => {
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, onActivity);
+      });
+    };
+  }, [markActivity]);
 
   useEffect(() => {
     connect();

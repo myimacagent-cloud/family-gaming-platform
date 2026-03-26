@@ -5,11 +5,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "smoke:init": "node scripts/smoke-init-check.mjs",
     "preview": "vite preview",
-    "deploy": "wrangler deploy",
+    "deploy": "npm run smoke:init && wrangler deploy",
     "deploy:ui": "wrangler pages deploy dist"
   },
   "dependencies": {
+    "chess.js": "^1.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0"
@@ -22,6 +24,6 @@
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.3.3",
     "vite": "^5.0.8",
-    "wrangler": "^3.22.1"
+    "wrangler": "^4.69.0"
   }
 }

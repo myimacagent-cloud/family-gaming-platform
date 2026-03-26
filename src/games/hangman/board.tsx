@@ -4,6 +4,35 @@ import type { HangmanState, HangmanMove } from './logic';
 
 interface HangmanBoardProps extends GameBoardProps<HangmanState> {}
 
+
+function HangmanDrawing({ wrongGuesses }: { wrongGuesses: number }) {
+  const head = wrongGuesses >= 1;
+  const body = wrongGuesses >= 2;
+  const leftArm = wrongGuesses >= 3;
+  const rightArm = wrongGuesses >= 4;
+  const leftLeg = wrongGuesses >= 5;
+  const rightLeg = wrongGuesses >= 6;
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label="Hangman drawing">
+        <line x1="20" y1="165" x2="100" y2="165" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
+        <line x1="45" y1="165" x2="45" y2="20" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
+        <line x1="45" y1="20" x2="120" y2="20" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
+        <line x1="120" y1="20" x2="120" y2="40" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
+
+        {head && <circle cx="120" cy="55" r="15" fill="none" stroke="#0f172a" strokeWidth="5" />}
+        {body && <line x1="120" y1="70" x2="120" y2="110" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />}
+        {leftArm && <line x1="120" y1="82" x2="98" y2="98" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />}
+        {rightArm && <line x1="120" y1="82" x2="142" y2="98" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />}
+        {leftLeg && <line x1="120" y1="110" x2="102" y2="140" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />}
+        {rightLeg && <line x1="120" y1="110" x2="138" y2="140" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />}
+      </svg>
+    </div>
+  );
+}
+
+
 export function HangmanBoard({
   state,
   myPlayerId,
@@ -61,6 +90,8 @@ export function HangmanBoard({
       <div style={{ textAlign: 'center', color: '#444', fontWeight: 600 }}>
         Wrong: {state.wrongGuesses} / {state.maxWrong}
       </div>
+
+      <HangmanDrawing wrongGuesses={state.wrongGuesses} />
 
       <div style={{ textAlign: 'center', color: '#444' }}>
         Guessed: {state.guessedLetters.length ? state.guessedLetters.join(', ') : '—'}

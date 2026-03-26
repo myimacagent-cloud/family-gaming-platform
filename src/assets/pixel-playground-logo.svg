@@ -1,0 +1,53 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6D7DFF"/>
+      <stop offset="1" stop-color="#9E5BFF"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="200%" height="200%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#1F114A" flood-opacity="0.25"/>
+    </filter>
+    <style>
+      .title { font-family: 'Baloo 2', 'Fredoka', 'Nunito', Arial, sans-serif; font-weight: 800; }
+      .subtitle { font-family: 'Nunito', Arial, sans-serif; font-weight: 700; letter-spacing: 3px; }
+      .pixel { shape-rendering: crispEdges; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="360" rx="40" fill="url(#bg)"/>
+
+  <!-- Pixel sparkles -->
+  <rect class="pixel" x="82" y="70" width="14" height="14" fill="#FFDE59"/>
+  <rect class="pixel" x="98" y="86" width="14" height="14" fill="#FFDE59"/>
+  <rect class="pixel" x="1060" y="60" width="14" height="14" fill="#73FBD3"/>
+  <rect class="pixel" x="1076" y="76" width="14" height="14" fill="#73FBD3"/>
+
+  <!-- Controller badge -->
+  <g filter="url(#shadow)">
+    <rect x="70" y="92" width="220" height="176" rx="36" fill="#FFFFFF" fill-opacity="0.95"/>
+    <rect x="104" y="142" width="34" height="12" rx="3" fill="#4F46E5"/>
+    <rect x="115" y="131" width="12" height="34" rx="3" fill="#4F46E5"/>
+
+    <circle cx="220" cy="150" r="10" fill="#FF5EA8"/>
+    <circle cx="248" cy="178" r="10" fill="#73FBD3"/>
+    <circle cx="220" cy="206" r="10" fill="#FFDE59"/>
+    <circle cx="192" cy="178" r="10" fill="#7AA2FF"/>
+
+    <rect x="146" y="220" width="68" height="10" rx="5" fill="#D7D3FF"/>
+  </g>
+
+  <!-- Title -->
+  <text x="330" y="170" class="title" font-size="86" fill="#FFFFFF" filter="url(#shadow)">Pixel Playground</text>
+  <text x="333" y="224" class="subtitle" font-size="26" fill="#D9F8FF">PLAY • CREATE • CHALLENGE</text>
+
+  <!-- Pixel underline -->
+  <rect class="pixel" x="332" y="248" width="20" height="20" fill="#FFDE59"/>
+  <rect class="pixel" x="356" y="248" width="20" height="20" fill="#FFDE59"/>
+  <rect class="pixel" x="380" y="248" width="20" height="20" fill="#FFDE59"/>
+  <rect class="pixel" x="404" y="248" width="20" height="20" fill="#73FBD3"/>
+  <rect class="pixel" x="428" y="248" width="20" height="20" fill="#73FBD3"/>
+  <rect class="pixel" x="452" y="248" width="20" height="20" fill="#73FBD3"/>
+  <rect class="pixel" x="476" y="248" width="20" height="20" fill="#FF5EA8"/>
+  <rect class="pixel" x="500" y="248" width="20" height="20" fill="#FF5EA8"/>
+  <rect class="pixel" x="524" y="248" width="20" height="20" fill="#FF5EA8"/>
+</svg>

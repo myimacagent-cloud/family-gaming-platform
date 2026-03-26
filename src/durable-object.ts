@@ -12,6 +12,7 @@ interface InternalRoomState {
   currentPlayerIndex: number;
   roundNumber: number;
   gameData: unknown;
+  restartVotes: string[];
   createdAt: number;
   lastActivityTs: number;
 }
@@ -34,6 +35,7 @@ export class GameRoom {
       currentPlayerIndex: 0,
       roundNumber: 1,
       gameData: null,
+      restartVotes: [],
       createdAt: Date.now(),
       lastActivityTs: Date.now(),
     };
@@ -45,6 +47,7 @@ export class GameRoom {
       this.roomState = {
         ...stored,
         roundNumber: typeof stored.roundNumber === 'number' ? stored.roundNumber : 1,
+        restartVotes: Array.isArray((stored as any).restartVotes) ? (stored as any).restartVotes : [],
       };
     }
   }
@@ -126,6 +129,9 @@ export class GameRoom {
       case 'restart_game':
         await this.handleRestart(wsId, message);
         break;
+      case 'restart_vote':
+        await this.handleRestartVote(wsId, message);
+        break;
       case 'request_state':
         this.sendToClient(ws, { type: 'state_sync', state: this.getPublicState() });
         break;
@@ -149,11 +155,13 @@ export class GameRoom {
         displayName: p.displayName,
         symbol: p.symbol,
         connected: p.connected,
+        avatarId: p.avatarId,
       })),
       status: this.roomState.status,
       winner: this.roomState.winner,
       currentPlayerIndex: this.roomState.currentPlayerIndex,
       roundNumber: this.roomState.roundNumber,
+      restartVotes: this.roomState.restartVotes || [],
       gameData: this.roomState.gameData,
       // Spread game-specific properties for direct access (excluding room-level properties)
       ...gameSpecificData,
@@ -169,6 +177,7 @@ export class GameRoom {
       displayName: p.displayName,
       symbol: p.symbol,
       connected: p.connected,
+      avatarId: p.avatarId,
     }));
     gameData.gameType = this.roomState.gameType;
     gameData.status = this.roomState.status;
@@ -184,6 +193,45 @@ export class GameRoom {
       this.roomState.status = gameData.status;
     }
     this.roomState.winner = gameData.winner;
+  }
+
+  private shouldAutoReinitializeGameData(gameData: unknown): boolean {
+    if (!gameData || typeof gameData !== 'object') return true;
+
+    const data = gameData as Record<string, unknown>;
+
+    // Common failure pattern for card/tile games: hands exist but are empty for all players.
+    if (data.hands && typeof data.hands === 'object') {
+      const handValues = Object.values(data.hands as Record<string, unknown>);
+      if (handValues.length > 0 && handValues.every((v) => Array.isArray(v) && v.length === 0)) {
+        return true;
+      }
+    }
+
+    // Similar pattern for board-initialized games.
+    if (data.boards && typeof data.boards === 'object') {
+      const boardValues = Object.values(data.boards as Record<string, unknown>);
+      if (boardValues.length > 0 && boardValues.every((v) => Array.isArray(v) && v.length === 0)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private ensureGameInitializedForActiveRoom(): void {
+    const gameDef = this.getGameDefinition();
+    if (!gameDef) return;
+
+    const connectedCount = this.roomState.players.filter((p) => p.connected).length;
+    if (connectedCount < gameDef.minPlayers) return;
+
+    // If game is active but game data is obviously empty/uninitialized, restart-init safely.
+    if (this.roomState.status === 'active' && this.shouldAutoReinitializeGameData(this.roomState.gameData)) {
+      this.roomState.gameData = gameDef.createRestartState(this.roomState.gameData as BaseGameState);
+      this.syncRoomMetadataFromGameData(this.roomState.gameData as BaseGameState);
+      this.syncGameDataMetadata();
+    }
   }
 
   private sendToClient(ws: WebSocket, message: ServerMessage): void {
@@ -212,8 +260,8 @@ export class GameRoom {
   private async handleJoinRoom(
     wsId: string,
     ws: WebSocket,
-    { userId, displayName, roomCode, gameType }: 
-    { userId: string; displayName: string; roomCode: string; gameType?: string }
+    { userId, displayName, roomCode, gameType, avatarId }: 
+    { userId: string; displayName: string; roomCode: string; gameType?: string; avatarId?: string }
   ): Promise<void> {
     // Check if player already exists (reconnecting)
     const existingPlayer = this.roomState.players.find(p => p.userId === userId);
@@ -222,6 +270,7 @@ export class GameRoom {
       existingPlayer.ws = ws;
       existingPlayer.wsId = wsId;
       existingPlayer.disconnectedAt = null;
+      if (avatarId) existingPlayer.avatarId = avatarId;
       this.connections.set(wsId, ws);
       
       this.sendToClient(ws, {
@@ -278,10 +327,12 @@ export class GameRoom {
       ws,
       wsId,
       disconnectedAt: null,
+      avatarId: avatarId || undefined,
     };
     
     this.roomState.players.push(newPlayer);
     this.connections.set(wsId, ws);
+    this.roomState.restartVotes = [];
 
     // Start game if we have enough players
     const currentGameDef = this.getGameDefinition();
@@ -290,8 +341,13 @@ export class GameRoom {
     
     if (connectedCount >= minPlayers && this.roomState.status === 'waiting') {
       this.roomState.status = 'active';
+      if (currentGameDef) {
+        this.roomState.gameData = currentGameDef.createRestartState(this.roomState.gameData as BaseGameState);
+        this.syncRoomMetadataFromGameData(this.roomState.gameData as BaseGameState);
+      }
     }
 
+    this.ensureGameInitializedForActiveRoom();
     this.syncGameDataMetadata();
 
     this.sendToClient(ws, {
@@ -320,6 +376,7 @@ export class GameRoom {
     }
 
     // Keep game metadata synchronized so validation logic has current players/turn/status.
+    this.ensureGameInitializedForActiveRoom();
     this.syncGameDataMetadata();
 
     const validation = gameDef.validateMove(
@@ -348,16 +405,14 @@ export class GameRoom {
       this.roomState.winner = gameEnd.winner;
     }
 
+    this.roomState.restartVotes = [];
     this.syncGameDataMetadata();
 
     this.broadcastMessage({ type: 'move_applied', state: this.getPublicState() });
     await this.persistState();
   }
 
-  private async handleRestart(_wsId: string, { userId }: { userId: string }): Promise<void> {
-    const player = this.roomState.players.find(p => p.userId === userId);
-    if (!player) return;
-
+  private doRestartRound(): void {
     const gameDef = this.getGameDefinition();
     if (!gameDef) return;
 
@@ -367,6 +422,7 @@ export class GameRoom {
     this.roomState.status = 'active';
     this.roomState.winner = null;
     this.roomState.roundNumber += 1;
+    this.roomState.restartVotes = [];
 
     if (previousWinner) {
       const winnerIndex = this.roomState.players.findIndex(p => p.symbol === previousWinner);
@@ -377,6 +433,32 @@ export class GameRoom {
 
     (this.roomState.gameData as BaseGameState).currentPlayerIndex = this.roomState.currentPlayerIndex;
     this.syncGameDataMetadata();
+  }
+
+  private async handleRestart(_wsId: string, { userId }: { userId: string }): Promise<void> {
+    const player = this.roomState.players.find(p => p.userId === userId);
+    if (!player) return;
+
+    this.doRestartRound();
+    this.broadcastStateSync();
+    await this.persistState();
+  }
+
+  private async handleRestartVote(_wsId: string, { userId }: { userId: string }): Promise<void> {
+    const player = this.roomState.players.find((p) => p.userId === userId);
+    if (!player) return;
+
+    const connected = this.roomState.players.filter((p) => p.connected).map((p) => p.userId);
+    if (connected.length < 2) return;
+
+    const votes = new Set(this.roomState.restartVotes || []);
+    votes.add(userId);
+    this.roomState.restartVotes = Array.from(votes);
+
+    const allAgreed = connected.every((id) => votes.has(id));
+    if (allAgreed) {
+      this.doRestartRound();
+    }
 
     this.broadcastStateSync();
     await this.persistState();

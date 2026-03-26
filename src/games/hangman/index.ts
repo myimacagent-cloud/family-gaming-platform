@@ -12,7 +12,7 @@ import type { HangmanState, HangmanMove } from './logic';
 
 export const hangmanGame: GameDefinition<HangmanState, HangmanMove> = {
   id: GAME_ID,
-  displayName: 'Hangman',
+  displayName: '🎯 Hangman',
   description: 'Co-op turn-based letter guessing with up to 6 wrong attempts.',
   minPlayers: 2,
   maxPlayers: 2,

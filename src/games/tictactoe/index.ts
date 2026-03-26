@@ -105,7 +105,7 @@ function checkGameEnd(state: TicTacToeState): { ended: boolean; winner: string |
 
 export const ticTacToeGame: GameDefinition<TicTacToeState, TicTacToeMove> = {
   id: GAME_ID,
-  displayName: 'Tic-Tac-Toe',
+  displayName: '⭕ Tic-Tac-Toe',
   description: 'Classic 3-in-a-row game for 2 players',
   minPlayers: 2,
   maxPlayers: 2,

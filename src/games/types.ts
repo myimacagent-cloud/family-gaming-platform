@@ -24,6 +24,13 @@ export interface GameBoardProps<TState extends BaseGameState> {
   mySymbol: string;
   onMove: (move: unknown) => void;
   disabled: boolean;
+  theme?: {
+    bg: string;
+    accent: string;
+    accent2: string;
+    textOnAccent: string;
+  };
+  themeKey?: string;
 }
 
 // Move validation result
